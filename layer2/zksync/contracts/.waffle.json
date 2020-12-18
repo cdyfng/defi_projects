@@ -1,0 +1,11 @@
+{
+    "sourceDirectory": "./contracts",
+    "outputDirectory": "./build",
+    "compilerType": "native",
+    "compilerOptions": {
+        "optimizer": {
+            "enabled": true,
+            "runs": 200
+        }
+    }
+}

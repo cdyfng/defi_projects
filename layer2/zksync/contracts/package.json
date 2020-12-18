@@ -1,0 +1,41 @@
+{
+  "name": "franklin-contracts",
+  "version": "0.1.0",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/argparse": "^1.0.36",
+    "@types/chai": "^4.2.14",
+    "@types/mocha": "^8.0.3",
+    "argparse": "^1.0.10",
+    "axios": "^0.21.0",
+    "chai": "^4.2.0",
+    "chalk": "^4.1.0",
+    "ethereum-waffle": "^3.1.2",
+    "ethereumjs-abi": "^0.6.8",
+    "ethers": "^5.0.19",
+    "ethjs": "^0.4.0",
+    "fs": "^0.0.1-security",
+    "mocha": "^8.2.0",
+    "openzeppelin-solidity": "^2.3.0",
+    "path": "^0.12.7",
+    "querystring": "^0.2.0",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.5",
+    "zksync": "link:../sdk/zksync.js"
+  },
+  "scripts": {
+    "build-dev": "waffle .waffle-dev.json",
+    "build": "waffle .waffle.json",
+    "test": "yarn build && zk f mocha -r ts-node/register test/**/*.ts",
+    "itest": "yarn build && mocha -r ts-node/register test/unit_tests/**/*.js test/fails_tests.ts",
+    "unit-test": "yarn build && mocha -r ts-node/register test/unit_tests/**/*",
+    "unit-test-watch": "yarn build && mocha -r ts-node/register test/unit_tests/**/* --watch --watch-extensions ts --watch-extensions 'js'",
+    "deploy-no-build": "ts-node scripts/deploy.ts",
+    "upgrade-testnet-no-build": "ts-node scripts/upgrade-testnet.ts",
+    "deploy-eip1271": "ts-node scripts/deploy-eip1271.ts",
+    "deploy-erc20": "ts-node scripts/deploy-erc20.ts",
+    "deploy-testkit": "ts-node scripts/deploy-testkit.ts",
+    "publish-sources": "ts-node scripts/publish.ts",
+    "deploy-testnet-erc20": "ts-node scripts/deploy-testnet-token.ts"
+  }
+}
