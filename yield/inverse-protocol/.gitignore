@@ -1,0 +1,12 @@
+node_modules
+.env
+
+# npm
+package-lock.json
+
+# yarn
+yarn-error.log
+
+# Hardhat files
+cache
+artifacts
