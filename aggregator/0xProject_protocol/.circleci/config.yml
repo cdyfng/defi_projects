@@ -1,0 +1,207 @@
+version: 2
+
+jobs:
+    build:
+        resource_class: medium+
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        environment:
+            CONTRACTS_COMMIT_HASH: '9ed05f5'
+        working_directory: ~/repo
+        steps:
+            - checkout
+            - run: echo 'export PATH=$HOME/CIRCLE_PROJECT_REPONAME/node_modules/.bin:$PATH' >> $BASH_ENV
+            - run:
+                  name: install-yarn
+                  command: npm install --force --global yarn@1.17.0
+            - run:
+                  name: yarn
+                  command: yarn --frozen-lockfile --ignore-engines install || yarn --frozen-lockfile --ignore-engines install
+            - setup_remote_docker
+            - run: yarn build:ci
+            - run: yarn build:ts
+            - save_cache:
+                  key: repo-{{ .Environment.CIRCLE_SHA1 }}
+                  paths:
+                      - ~/repo
+            - store_artifacts:
+                  path: ~/repo/packages/abi-gen/test-cli/output
+            - store_artifacts:
+                  path: ~/repo/packages/contract-wrappers/generated_docs
+    test-exchange-ganache:
+        resource_class: medium+
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run: yarn wsrun test:circleci @0x/contracts-exchange
+    test-integrations-ganache:
+        resource_class: medium+
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run: yarn wsrun test:circleci @0x/contracts-integrations
+    test-contracts-staking-ganache:
+        resource_class: medium+
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run: yarn wsrun test:circleci @0x/contracts-staking
+    test-contracts-extra-ganache:
+        resource_class: medium+
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run: yarn wsrun test:circleci @0x/contracts-exchange-forwarder @0x/contracts-coordinator
+    test-contracts-rest-ganache:
+        resource_class: medium+
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run: yarn wsrun test:circleci @0x/contracts-multisig @0x/contracts-utils @0x/contracts-exchange-libs @0x/contracts-erc20 @0x/contracts-erc721 @0x/contracts-erc1155 @0x/contracts-asset-proxy @0x/contracts-broker @0x/contracts-zero-ex
+    test-publish:
+        resource_class: medium+
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+            - image: 0xorg/verdaccio
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run:
+                  command: yarn test:publish:circleci
+                  no_output_timeout: 1800
+            - store_artifacts:
+                  path: ~/.npm/_logs
+    test-doc-generation:
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run:
+                  command: yarn test:generate_docs:circleci
+                  no_output_timeout: 1200
+    test-rest:
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run: yarn wsrun test:circleci @0x/contracts-test-utils
+            - run: yarn wsrun test:circleci @0x/contract-artifacts
+            - run: yarn wsrun test:circleci @0x/contract-wrappers-test
+            - run: yarn wsrun test:circleci @0x/migrations
+            - run: yarn wsrun test:circleci @0x/order-utils
+            - run: yarn wsrun test:circleci @0x/asset-swapper
+            - save_cache:
+                  key: coverage-contract-wrappers-test-{{ .Environment.CIRCLE_SHA1 }}
+                  paths:
+                      - ~/repo/packages/contract-wrappers-test/coverage/lcov.info
+            - save_cache:
+                  key: coverage-order-utils-{{ .Environment.CIRCLE_SHA1 }}
+                  paths:
+                      - ~/repo/packages/order-utils/coverage/lcov.info
+            - save_cache:
+                  key: coverage-web3-wrapper-{{ .Environment.CIRCLE_SHA1 }}
+                  paths:
+                      - ~/repo/packages/web3-wrapper/coverage/lcov.info
+    static-tests:
+        resource_class: large
+        working_directory: ~/repo
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - run: yarn lerna run lint
+            - run: yarn prettier:ci
+            - run: yarn deps_versions:ci
+            - run: yarn diff_md_docs:ci
+    submit-coverage:
+        docker:
+            - image: nikolaik/python-nodejs:python3.7-nodejs10
+        working_directory: ~/repo
+        steps:
+            - restore_cache:
+                  keys:
+                      - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                  keys:
+                      - coverage-contract-wrappers-test-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                  keys:
+                      - coverage-order-utils-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                  keys:
+                      - coverage-contracts-{{ .Environment.CIRCLE_SHA1 }}
+            - run: yarn report_coverage
+workflows:
+    version: 2
+    main:
+        jobs:
+            - build
+            # Disabled until we begin actively developing on these packages again.
+            # - test-exchange-ganache:
+            #       requires:
+            #           - build
+            # - test-integrations-ganache:
+            #       requires:
+            #           - build
+            # - test-contracts-staking-ganache:
+            #       requires:
+            #           - build
+            # - test-contracts-extra-ganache:
+            #       requires:
+            #           - build
+            - test-contracts-rest-ganache:
+                  requires:
+                      - build
+            - test-rest:
+                  requires:
+                      - build
+            - static-tests:
+                  requires:
+                      - build
+            - test-publish:
+                  requires:
+                      - build
+            - test-doc-generation:
+                  requires:
+                      - build
+            # Disabled until this repo has a coveralls API key
+            # - submit-coverage:
+            #       requires:
+            #           # Disabled until we begin actively developing on these packages again.
+            #           # - test-exchange-ganache
+            #           # - test-integrations-ganache
+            #           # - test-contracts-staking-ganache
+            #           # - test-contracts-extra-ganache
+            #           - test-contracts-rest-ganache
+            #           - test-rest
+            #           - static-tests

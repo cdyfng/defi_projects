@@ -1,0 +1,41 @@
+/* override table width restrictions */
+@media screen and (min-width: 767px) {
+
+    .wy-table-responsive table td {
+       /* !important prevents the common CSS stylesheets from overriding
+          this as on RTD they are loaded after this stylesheet */
+       white-space: normal !important;
+    }
+ 
+    .wy-table-responsive {
+       overflow: visible !important;
+    }
+
+   table {
+      width: 100% !important;
+   }
+
+   td ul p {
+      font-size: 0.9rem !important;
+    }
+
+    h1 {
+      font-size: 24px !important;
+    }
+
+    h2 {
+      font-size: 20px !important;
+    }
+
+    h3 {
+      font-size: 18px !important;
+    }
+
+    .strike {
+      text-decoration: line-through;
+    }
+
+    .document a:visited {
+      color: #2980b9;
+    }
+ }
