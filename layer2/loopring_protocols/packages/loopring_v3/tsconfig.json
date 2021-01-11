@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "outDir": "./transpiled/",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "module": "commonjs",
+    "target": "es6",
+    "baseUrl": ".",
+    "allowJs": true
+  },
+  "include": [
+    "node_modules/loopringV3.js/index.ts",
+    "node_modules/loopringV3.js/src/**/*",
+    "./globals.d.ts",
+    "./util/**/*",
+    "./test/**/*",
+    "./migrations/**/*"
+  ]
+}
