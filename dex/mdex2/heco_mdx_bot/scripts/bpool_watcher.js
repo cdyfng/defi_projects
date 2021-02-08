@@ -11,6 +11,7 @@ function watchTokenTransfers() {
     )
   );
 
+  const voice_on = true;
   var decimals = 18;
   const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
   const RAZOR = "0x50DE6856358Cc35f3A9a57eAAA34BD4cB707d2cd";
@@ -29,7 +30,7 @@ function watchTokenTransfers() {
   // Generate filter options
   const options = {
     fromBlock: "latest",
-    //fromBlock: "11684400",
+    //fromBlock: "11795000",
   };
 
   // Subscribe to Transfer events matching filter criteria
@@ -45,23 +46,27 @@ function watchTokenTransfers() {
     //console.log("tokenIn:", rv.tokenIn)
     if (rv.tokenIn == USDC && rv.tokenOut == RAZOR) {
       console.log(
-        rv.caller,
+        event.transactionHash,
         "buy ",
         (rv.tokenAmountOut / 1e18).toFixed(1),
         "@",
-        (rv.tokenAmountIn / 1e6 / (rv.tokenAmountOut / 1e18)).toFixed(3)
+        (rv.tokenAmountIn / 1e6 / (rv.tokenAmountOut / 1e18)).toFixed(3),
+        new Date()
       );
-      cmd.runSync("say 买入 " + (rv.tokenAmountOut / 1e18).toFixed(1));
+      if (voice_on)
+        cmd.runSync("say 买入 " + (rv.tokenAmountOut / 1e18).toFixed(1));
     } else if (rv.tokenOut == USDC && rv.tokenIn == RAZOR) {
       //sell out
       console.log(
-        rv.caller,
+        event.transactionHash,
         "sell ",
         (rv.tokenAmountIn / 1e18).toFixed(1),
         "@",
-        (rv.tokenAmountOut / 1e6 / (rv.tokenAmountIn / 1e18)).toFixed(3)
+        (rv.tokenAmountOut / 1e6 / (rv.tokenAmountIn / 1e18)).toFixed(3),
+        new Date()
       );
-      cmd.runSync("say 买入 " + (rv.tokenAmountIn / 1e18).toFixed(1));
+      if (voice_on)
+        cmd.runSync("say 卖出 " + (rv.tokenAmountIn / 1e18).toFixed(1));
     } else {
       console.log("event:", event);
       cmd.runSync("say 错误");
