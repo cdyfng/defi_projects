@@ -52,7 +52,7 @@ async function getSushiReward(gauge, address) {
   const gaugeABI = require("../abis/sushiMasterChef").abi;
   //
   // Instantiate token contract object with JSON ABI and address
-  console.log("Gauge:", 21, "Address:", sushiMasterChef);
+  console.log("Gauge:", 21, "Address:", sushiMasterChef); //21 means WBTC/ETH pool
   const tokenContract = new web3.eth.Contract(
     gaugeABI,
     sushiMasterChef,
