@@ -47,13 +47,34 @@ async function getCurvehReward(gauge, address) {
   console.log("Earned: ", earned / 1e18, "Curve");
 }
 
+async function getSushiReward(gauge, address) {
+  const sushiMasterChef = "0xc2EdaD668740f1aA35E4D8f227fB8E17dcA888Cd";
+  const gaugeABI = require("../abis/sushiMasterChef").abi;
+  //
+  // Instantiate token contract object with JSON ABI and address
+  console.log("Gauge:", 21, "Address:", sushiMasterChef);
+  const tokenContract = new web3.eth.Contract(
+    gaugeABI,
+    sushiMasterChef,
+    (error, result) => {
+      if (error) console.log(error);
+      console.log("result:", result);
+    }
+  );
+  //await tokenContract.methods.user_checkpoint(address).call();
+  let earned = await tokenContract.methods.pendingSushi(gauge, address).call();
+  console.log("Earned: ", earned / 1e18, "Sushi");
+}
+
 async function main() {
   const bbtcGauge = "0xdFc7AdFa664b08767b735dE28f9E84cd30492aeE";
   const usdnGauge = "0xF98450B5602fa59CC66e1379DFfB6FDDc724CfC4";
 
+  await getSushiReward(21, process.env.L2);
   await get1inchReward(process.env.L2);
   await getCurvehReward(bbtcGauge, process.env.L3);
   await getCurvehReward(usdnGauge, process.env.L2);
+  process.exit();
 }
 
 main();
