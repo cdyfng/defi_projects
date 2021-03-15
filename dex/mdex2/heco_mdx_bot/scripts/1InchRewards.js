@@ -77,6 +77,24 @@ async function getCompoudReward(address) {
   console.log("Earned: ", json.markets[0].comp_allocated, "Comp");
 }
 
+async function getInverseReward(address) {
+  const stakingRewards = "0x5c1245F9dB3f8f7Fe1208cB82325eA88fC11Fe89";
+  const gaugeABI = require("../abis/INVStakingRewards").abi;
+  //
+  // Instantiate token contract object with JSON ABI and address
+  console.log("Gauge Address:", stakingRewards);
+  const tokenContract = new web3.eth.Contract(
+    gaugeABI,
+    stakingRewards,
+    (error, result) => {
+      if (error) console.log(error);
+      console.log("result:", result);
+    }
+  );
+  let earned = await tokenContract.methods.earned(address).call();
+  console.log("Earned: ", earned / 1e18, "Inverse");
+}
+
 async function main() {
   const bbtcGauge = "0xdFc7AdFa664b08767b735dE28f9E84cd30492aeE";
   const usdnGauge = "0xF98450B5602fa59CC66e1379DFfB6FDDc724CfC4";
@@ -86,6 +104,7 @@ async function main() {
   await get1inchReward(process.env.L2);
   await getCurvehReward(bbtcGauge, process.env.L3);
   await getCurvehReward(usdnGauge, process.env.L2);
+  await getInverseReward(process.env.M11);
 
   process.exit();
 }
