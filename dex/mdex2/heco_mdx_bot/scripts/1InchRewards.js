@@ -3,8 +3,8 @@ const INCHPOOL_ABI = require("./1InchFarmingRewards").abi;
 var cmd = require("node-cmd");
 const web3 = new Web3(
   new Web3.providers.WebsocketProvider(
-    //"wss://mainnet.infura.io/ws/v3/" + process.env.INFURA_API_KEY
-    "https://127.0.0.1:8546"
+    "wss://mainnet.infura.io/ws/v3/" + process.env.INFURA_API_KEY
+    //"https://127.0.0.1:8546"
   )
 );
 
@@ -66,14 +66,27 @@ async function getSushiReward(gauge, address) {
   console.log("Earned: ", earned / 1e18, "Sushi");
 }
 
+async function getCompoudReward(address) {
+  const fetch = require("node-fetch");
+  var data =
+    "https://api.compound.finance/api/v2/governance/comp/account?address=" +
+    address;
+  const response = await fetch(data);
+  const json = await response.json();
+  //console.log(json)
+  console.log("Earned: ", json.markets[0].comp_allocated, "Comp");
+}
+
 async function main() {
   const bbtcGauge = "0xdFc7AdFa664b08767b735dE28f9E84cd30492aeE";
   const usdnGauge = "0xF98450B5602fa59CC66e1379DFfB6FDDc724CfC4";
 
+  await getCompoudReward(process.env.L4_INSTADAPP);
   await getSushiReward(21, process.env.L2);
   await get1inchReward(process.env.L2);
   await getCurvehReward(bbtcGauge, process.env.L3);
   await getCurvehReward(usdnGauge, process.env.L2);
+
   process.exit();
 }
 
