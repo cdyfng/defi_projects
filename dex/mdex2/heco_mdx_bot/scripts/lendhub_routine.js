@@ -13,7 +13,7 @@ const getPrice = async (address, decimals) => {
     const price = await orcalContract.methods
       .consult(address, String(Math.pow(10, decimals)), usdtAddress)
       .call();
-    return price / Math.pow(10, decimals);
+    return price / Math.pow(10, 18);
   } catch (e) {
     // statements to handle any exceptions
     console.log(e); // pass exception object to error handler
@@ -24,12 +24,13 @@ async function getTokenStatus(
   address,
   lTokenAddress,
   underlyingTokenAddress,
+  underlyingTokenDecimals,
   name
 ) {
   // Instantiate web3 with WebSocketProvider
   try {
     const voice_on = true;
-    var decimals = 18;
+    //var decimals = 18;
 
     const LErc20Delegator = lTokenAddress;
     //console.log("Address:", LErc20Delegator);
@@ -46,7 +47,7 @@ async function getTokenStatus(
     if (underlyingTokenAddress == "0xa71edc38d189767582c38a3145b5873052c3e47a")
       price = 1;
     else {
-      price = await getPrice(underlyingTokenAddress, 18);
+      price = await getPrice(underlyingTokenAddress, underlyingTokenDecimals);
       //console.log(name, "price:", price);
     }
     let borrowBalanceStored = await tokenContract.methods
@@ -61,6 +62,7 @@ async function getTokenStatus(
       .balanceOfUnderlying(address)
       .call();
     //console.log("balanceOfUnderlying: ", balanceOfUnderlying / 1e18, name);
+    //console.log({ borrowBalanceStored, balanceOfUnderlying, price });
     return { borrowBalanceStored, balanceOfUnderlying, price };
   } catch (e) {
     // statements to handle any exceptions
@@ -76,6 +78,7 @@ async function lhb_routine() {
       process.env.METAMASK_ETH1,
       LHBTC,
       HBTC,
+      18,
       "HBTC"
     );
 
@@ -85,6 +88,7 @@ async function lhb_routine() {
       process.env.METAMASK_ETH1,
       LMDX,
       mdxAddress,
+      18,
       "MDX"
     );
 
@@ -94,32 +98,54 @@ async function lhb_routine() {
       process.env.METAMASK_ETH1,
       LUSDT,
       USDT,
+      18,
       "USDT"
     );
 
     let LHT = "0x99a2114b282acc9dd25804782acb4d3a2b1ad215";
     let WHT = "0x5545153ccfca01fbd7dd11c0b23ba694d9509a6f";
-    let s4 = await getTokenStatus(process.env.METAMASK_ETH1, LHT, WHT, "HT");
+    let s4 = await getTokenStatus(
+      process.env.METAMASK_ETH1,
+      LHT,
+      WHT,
+      18,
+      "HT"
+    );
+    //console.log("s4: ", s4);
 
+    let LHUSD = "0x1c478d5d1823d51c4c4b196652912a89d9b46c30";
+    let HUSD = "0x0298c2b32eae4da002a15f36fdf7615bea3da047";
+    let s5 = await getTokenStatus(
+      process.env.METAMASK_ETH1,
+      LHUSD,
+      HUSD,
+      8,
+      "HUSD"
+    );
+
+    //console.log("s5: ", s5);
     let lendingAsset =
       (s1["balanceOfUnderlying"] / 1e18) * s1["price"] +
       (s2["balanceOfUnderlying"] / 1e18) * s2["price"] +
       (s3["balanceOfUnderlying"] / 1e18) * s3["price"] +
-      (s4["balanceOfUnderlying"] / 1e18) * s4["price"];
+      (s4["balanceOfUnderlying"] / 1e18) * s4["price"] +
+      (s5["balanceOfUnderlying"] / 1e8) * s5["price"];
     //console.log("lendingAsset:", lendingAsset);
 
     let colateralAsset =
       (s1["balanceOfUnderlying"] / 1e18) * s1["price"] * 0.85 +
       (s2["balanceOfUnderlying"] / 1e18) * s2["price"] * 0 +
       (s3["balanceOfUnderlying"] / 1e18) * s3["price"] * 0.9 +
-      (s4["balanceOfUnderlying"] / 1e18) * s4["price"] * 0.8;
+      (s4["balanceOfUnderlying"] / 1e18) * s4["price"] * 0.8 +
+      (s5["balanceOfUnderlying"] / 1e8) * s5["price"] * 0.9;
 
     //console.log("colateralAsset:", colateralAsset);
     let borrowingAsset =
       (s1["borrowBalanceStored"] / 1e18) * s1["price"] +
       (s2["borrowBalanceStored"] / 1e18) * s2["price"] +
       (s3["borrowBalanceStored"] / 1e18) * s3["price"] +
-      (s4["borrowBalanceStored"] / 1e18) * s4["price"];
+      (s4["borrowBalanceStored"] / 1e18) * s4["price"] +
+      (s5["borrowBalanceStored"] / 1e8) * s5["price"];
     //console.log("borrowingAsset:", borrowingAsset);
 
     let rate = (borrowingAsset / colateralAsset).toFixed(4);
@@ -136,9 +162,10 @@ async function lhb_routine() {
       "Price:",
       s1["price"].toFixed(1),
       s2["price"].toFixed(2),
-      s4["price"].toFixed(1)
+      s4["price"].toFixed(1),
+      s5["price"].toFixed(1)
     );
-    if (rate * 100 > 85) {
+    if (rate * 100 > 92) {
       cmd.runSync("say " + "使用率大于" + (rate * 100).toFixed(2));
       console.log(new Date() + "使用率大于" + rate * 100);
     } else if (rate * 100 < 75) {
