@@ -123,13 +123,24 @@ async function lhb_routine() {
       "HUSD"
     );
 
+    let LFILE = "0x276A4829d41Bfc3885eDB60c7B008188f096b082";
+    let FILE = "0xae3a768f9ab104c69a7cd6041fe16ffa235d1810";
+    let s6 = await getTokenStatus(
+      process.env.METAMASK_ETH1,
+      LFILE,
+      FILE,
+      18,
+      "FILE"
+    );
+
     //console.log("s5: ", s5);
     let lendingAsset =
       (s1["balanceOfUnderlying"] / 1e18) * s1["price"] +
       (s2["balanceOfUnderlying"] / 1e18) * s2["price"] +
       (s3["balanceOfUnderlying"] / 1e18) * s3["price"] +
       (s4["balanceOfUnderlying"] / 1e18) * s4["price"] +
-      (s5["balanceOfUnderlying"] / 1e8) * s5["price"];
+      (s5["balanceOfUnderlying"] / 1e8) * s5["price"] +
+      (s6["balanceOfUnderlying"] / 1e18) * s6["price"] ;
     //console.log("lendingAsset:", lendingAsset);
 
     let colateralAsset =
@@ -137,7 +148,8 @@ async function lhb_routine() {
       (s2["balanceOfUnderlying"] / 1e18) * s2["price"] * 0 +
       (s3["balanceOfUnderlying"] / 1e18) * s3["price"] * 0.9 +
       (s4["balanceOfUnderlying"] / 1e18) * s4["price"] * 0.8 +
-      (s5["balanceOfUnderlying"] / 1e8) * s5["price"] * 0.9;
+      (s5["balanceOfUnderlying"] / 1e8) * s5["price"] * 0.9 +
+       (s6["balanceOfUnderlying"] / 1e18) * s6["price"] * 0.5;
 
     //console.log("colateralAsset:", colateralAsset);
     let borrowingAsset =
@@ -145,7 +157,8 @@ async function lhb_routine() {
       (s2["borrowBalanceStored"] / 1e18) * s2["price"] +
       (s3["borrowBalanceStored"] / 1e18) * s3["price"] +
       (s4["borrowBalanceStored"] / 1e18) * s4["price"] +
-      (s5["borrowBalanceStored"] / 1e8) * s5["price"];
+      (s5["borrowBalanceStored"] / 1e8) * s5["price"] +
+       (s6["borrowBalanceStored"] / 1e18) * s6["price"];
     //console.log("borrowingAsset:", borrowingAsset);
 
     let rate = (borrowingAsset / colateralAsset).toFixed(4);
@@ -163,9 +176,10 @@ async function lhb_routine() {
       s1["price"].toFixed(1),
       s2["price"].toFixed(2),
       s4["price"].toFixed(1),
-      s5["price"].toFixed(1)
+      s5["price"].toFixed(1),
+      s6["price"].toFixed(1),
     );
-    if (rate * 100 > 92) {
+    if (rate * 100 > 87) {
       cmd.runSync("say " + "使用率大于" + (rate * 100).toFixed(2));
       console.log(new Date() + "使用率大于" + rate * 100);
     } else if (rate * 100 < 75) {
