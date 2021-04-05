@@ -12,6 +12,7 @@ const mdexPairAbi = require("./abis2/mdexpair.json");
 const airdropMDXAbi = require("./abis2/AirdropMDX.json");
 const LErc20Delegator_ABI = require("./abis/LErc20Delegator").abi;
 const oracleAbi = require("./scripts/oracle.json");
+const config = require("./config.json");
 
 // contract
 const provider = new web3(hecoAddress);
@@ -269,8 +270,8 @@ async function main() {
   //console.log(lhb_usdt, lhb_mdx, lhb_fil, lhb_hbtc);
   //console.log(`Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(3)}FIL`);
 
-  const init_usdt = 472462 - 15000;
-  const init_hbtc = 10;
+  const init_usdt = config.initial_fund.usdt;
+  const init_hbtc = config.initial_fund.btc;
   const delta_u = lhb_usdt - init_usdt;
   const delta_mdx = lhb_mdx + lp_mdx;
   const delta_fil = lhb_fil + lp_fil;
