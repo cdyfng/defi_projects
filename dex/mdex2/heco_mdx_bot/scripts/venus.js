@@ -373,52 +373,78 @@ async function withdrawVAIVault(owner, amount) {
 }
 
 async function calculator() {
-  let owner = process.env.METAMASK_ETH1; //config.wallet.publicKey;
-  let prices = await getOraclePrices(getTokens());
+  try {
+    let owner = process.env.L5; //METAMASK_ETH1; //config.wallet.publicKey;
+    let prices = await getOraclePrices(getTokens());
 
-  // Slove oracle price slowly update :)
-  if (config.bot.vault.exchangeRate) {
-    let exchangePrices = await getExchangePrices();
-    for (let key in exchangePrices) {
-      let price = exchangePrices[key];
-      if (price > 0) {
-        let diffPercent = 100 - (price / prices[key]) * 100;
-        if (diffPercent > 0) {
-          prices[key] = price;
+    // Slove oracle price slowly update :)
+    if (config.bot.vault.exchangeRate) {
+      let exchangePrices = await getExchangePrices();
+      for (let key in exchangePrices) {
+        let price = exchangePrices[key];
+        if (price > 0) {
+          let diffPercent = 100 - (price / prices[key]) * 100;
+          if (diffPercent > 0) {
+            prices[key] = price;
+          }
         }
       }
     }
-  }
 
-  let vTokens = await getVTokens(getTokens(), owner, prices);
-  let VAIBorrow = await getVAIBorrow(owner);
-  let VAIStake = await getVAIStake(owner);
-  let totalSupply = vTokens.reduce((a, b) => a + b.supplyPrice, 0);
-  let totalBorrow = vTokens.reduce((a, b) => a + b.borrowPrice, 0);
-  totalBorrow += VAIBorrow;
-  let borrowLimit = vTokens.reduce((a, b) => a + b.borrowLimit, 0);
-  let borrowPercent = (totalBorrow / borrowLimit) * 100;
-  let liquidity = borrowLimit - totalBorrow;
-  let liquidityPercent = 100 - borrowPercent;
+    let vTokens = await getVTokens(getTokens(), owner, prices);
+    let VAIBorrow = await getVAIBorrow(owner);
+    let VAIStake = await getVAIStake(owner);
+    let totalSupply = vTokens.reduce((a, b) => a + b.supplyPrice, 0);
+    let totalBorrow = vTokens.reduce((a, b) => a + b.borrowPrice, 0);
+    totalBorrow += VAIBorrow;
+    let borrowLimit = vTokens.reduce((a, b) => a + b.borrowLimit, 0);
+    let borrowPercent = (totalBorrow / borrowLimit) * 100;
+    let liquidity = borrowLimit - totalBorrow;
+    let liquidityPercent = 100 - borrowPercent;
 
-  let XVSVault = await getXVSVault(owner, prices.XVS);
-  let XVSAccrued = await getXVSAccrued(owner, prices.XVS);
-  let totalReward = XVSVault.vault + XVSAccrued.accrued;
-  let rewardPrice = XVSVault.price + XVSAccrued.price;
+    let XVSVault = await getXVSVault(owner, prices.XVS);
+    let XVSAccrued = await getXVSAccrued(owner, prices.XVS);
+    let totalReward = XVSVault.vault + XVSAccrued.accrued;
+    let rewardPrice = XVSVault.price + XVSAccrued.price;
 
-  // Simple bot
-  let liquidityFix = config.bot.vault.liquidityFix; // lower = risk (liquidation)
-  let liquidityGap = config.bot.vault.liquidityGap;
-  let stakePercent =
-    100 - ((totalBorrow - VAIBorrow) / borrowLimit) * 100 - liquidityFix;
-  let stakeAmount = round((borrowLimit * stakePercent) / 100, 2);
+    // Simple bot
+    let liquidityFix = config.bot.vault.liquidityFix; // lower = risk (liquidation)
+    let liquidityGap = config.bot.vault.liquidityGap;
+    let stakePercent =
+      100 - ((totalBorrow - VAIBorrow) / borrowLimit) * 100 - liquidityFix;
+    let stakeAmount = round((borrowLimit * stakePercent) / 100, 2);
 
-  if (config.wallet.privateKey != "-") {
-    let VAIEmpty = round(VAIBorrow - VAIStake, 2);
-    if (stakeAmount > 0) {
-      if (liquidityPercent <= liquidityFix - liquidityGap) {
-        if (VAIStake > stakeAmount) {
-          let val = toWei(round(VAIStake - stakeAmount, 2));
+    if (config.wallet.privateKey != "-") {
+      let VAIEmpty = round(VAIBorrow - VAIStake, 2);
+      if (stakeAmount > 0) {
+        if (liquidityPercent <= liquidityFix - liquidityGap) {
+          if (VAIStake > stakeAmount) {
+            let val = toWei(round(VAIStake - stakeAmount, 2));
+            let tx1 = await withdrawVAIVault(owner, val);
+            if (tx1 != "") {
+              await repayVAI(owner, val);
+            }
+          } else if (VAIEmpty > 0) {
+            await repayVAI(owner, toWei(VAIEmpty));
+          }
+        } else if (liquidityPercent >= liquidityFix + liquidityGap) {
+          if (stakeAmount > VAIBorrow) {
+            let val = toWei(round(stakeAmount - VAIBorrow, 2));
+            let tx1 = await mintVAI(owner, val);
+            if (tx1 != "") {
+              await depositVAIVault(owner, val);
+            }
+          } else if (VAIEmpty > 0) {
+            await depositVAIVault(owner, toWei(VAIEmpty));
+          }
+        } else if (VAIEmpty > 0) {
+          // repay (tx fail)
+          await repayVAI(owner, toWei(VAIEmpty));
+        }
+      } else if (VAIBorrow > 0) {
+        // unstake & repay
+        if (VAIStake > 0) {
+          let val = toWei(VAIStake);
           let tx1 = await withdrawVAIVault(owner, val);
           if (tx1 != "") {
             await repayVAI(owner, val);
@@ -426,102 +452,80 @@ async function calculator() {
         } else if (VAIEmpty > 0) {
           await repayVAI(owner, toWei(VAIEmpty));
         }
-      } else if (liquidityPercent >= liquidityFix + liquidityGap) {
-        if (stakeAmount > VAIBorrow) {
-          let val = toWei(round(stakeAmount - VAIBorrow, 2));
-          let tx1 = await mintVAI(owner, val);
-          if (tx1 != "") {
-            await depositVAIVault(owner, val);
-          }
-        } else if (VAIEmpty > 0) {
-          await depositVAIVault(owner, toWei(VAIEmpty));
-        }
-      } else if (VAIEmpty > 0) {
-        // repay (tx fail)
-        await repayVAI(owner, toWei(VAIEmpty));
-      }
-    } else if (VAIBorrow > 0) {
-      // unstake & repay
-      if (VAIStake > 0) {
-        let val = toWei(VAIStake);
-        let tx1 = await withdrawVAIVault(owner, val);
-        if (tx1 != "") {
-          await repayVAI(owner, val);
-        }
-      } else if (VAIEmpty > 0) {
-        await repayVAI(owner, toWei(VAIEmpty));
       }
     }
-  }
 
-  // Interest (estimated)
-  let interests = { supply: [], borrow: [] };
-  for (let val of vTokens) {
-    let price = prices[val.token];
-    let apy = await getVTokenAPY(getToken(val.token));
-    if (val.supply > 0) {
-      let interestPerDay = (val.supply * apy.supply) / 100 / 365;
-      interests.supply.push({
-        token: val.token,
-        interest: interestPerDay,
-        price: interestPerDay * price,
-      });
+    // Interest (estimated)
+    let interests = { supply: [], borrow: [] };
+    for (let val of vTokens) {
+      let price = prices[val.token];
+      let apy = await getVTokenAPY(getToken(val.token));
+      if (val.supply > 0) {
+        let interestPerDay = (val.supply * apy.supply) / 100 / 365;
+        interests.supply.push({
+          token: val.token,
+          interest: interestPerDay,
+          price: interestPerDay * price,
+        });
+      }
+      if (val.borrow > 0) {
+        let interestPerDay = (val.borrow * apy.borrow) / 100 / 365;
+        interests.borrow.push({
+          token: val.token,
+          interest: interestPerDay,
+          price: interestPerDay * price,
+        });
+      }
     }
-    if (val.borrow > 0) {
-      let interestPerDay = (val.borrow * apy.borrow) / 100 / 365;
-      interests.borrow.push({
-        token: val.token,
-        interest: interestPerDay,
-        price: interestPerDay * price,
-      });
+
+    // XVS Earned (estimated) (supply, borrow)
+    let estXVSEarned = 0;
+    let estEarnedPrice = 0;
+    for (let val of vTokens) {
+      let apy = await getVenusAPY(getToken(val.token), prices);
+      if (val.supplyPrice > 0) {
+        let vaiPerDay = (val.supplyPrice * apy.supply) / 100 / 365;
+        estXVSEarned += vaiPerDay / prices.XVS;
+      }
+      if (val.borrowPrice > 0) {
+        let vaiPerDay = (val.borrowPrice * apy.borrow) / 100 / 365;
+        estXVSEarned += vaiPerDay / prices.XVS;
+      }
     }
-  }
-
-  // XVS Earned (estimated) (supply, borrow)
-  let estXVSEarned = 0;
-  let estEarnedPrice = 0;
-  for (let val of vTokens) {
-    let apy = await getVenusAPY(getToken(val.token), prices);
-    if (val.supplyPrice > 0) {
-      let vaiPerDay = (val.supplyPrice * apy.supply) / 100 / 365;
-      estXVSEarned += vaiPerDay / prices.XVS;
+    if (estXVSEarned > 0) {
+      estEarnedPrice = estXVSEarned * prices.XVS;
     }
-    if (val.borrowPrice > 0) {
-      let vaiPerDay = (val.borrowPrice * apy.borrow) / 100 / 365;
-      estXVSEarned += vaiPerDay / prices.XVS;
+
+    // Vault (estimated)
+    let estXVSVault = 0;
+    let estVaultPrice = 0;
+    let vaultAPY = await getVaultAPY(VAIStake, prices.XVS);
+    if (vaultAPY > 0) {
+      estXVSVault = (VAIStake * vaultAPY) / 100 / 365 / prices.XVS;
+      estVaultPrice = estXVSVault * prices.XVS;
     }
-  }
-  if (estXVSEarned > 0) {
-    estEarnedPrice = estXVSEarned * prices.XVS;
-  }
 
-  // Vault (estimated)
-  let estXVSVault = 0;
-  let estVaultPrice = 0;
-  let vaultAPY = await getVaultAPY(VAIStake, prices.XVS);
-  if (vaultAPY > 0) {
-    estXVSVault = (VAIStake * vaultAPY) / 100 / 365 / prices.XVS;
-    estVaultPrice = estXVSVault * prices.XVS;
-  }
+    let supplyInt = interests.supply.reduce((a, b) => a + b.price, 0);
+    let borrowInt = interests.borrow.reduce((a, b) => a + b.price, 0);
+    let dailyEarnings = estEarnedPrice + estVaultPrice + supplyInt - borrowInt;
 
-  let supplyInt = interests.supply.reduce((a, b) => a + b.price, 0);
-  let borrowInt = interests.borrow.reduce((a, b) => a + b.price, 0);
-  let dailyEarnings = estEarnedPrice + estVaultPrice + supplyInt - borrowInt;
-
-  // Simple console :)
-  //console.clear();
-  console.log(
-    new Date(),
-    `bsc: ${round(totalBorrow / borrowLimit, 4)}\
+    // Simple console :)
+    //console.clear();
+    console.log(
+      new Date(),
+      `bsc: ${round(totalBorrow / borrowLimit, 4)}\
  B: ${round(totalBorrow, 2)} C: ${round(borrowLimit, 2)}\
  L: ${round(totalSupply, 0)} ${round(prices.BNB, 2)}\
  prices: ${round(prices.BNB, 2)} ${round(prices.BTC, 2)}`
-  );
-  //console.log(new Date(), "===================================");
-  if (borrowPercent > 85) {
-    cmd.runSync("say " + "bnb借贷抵押率超过" + borrowPercent.toFixed(1));
-  } else if (borrowPercent < 75) {
-    cmd.runSync("say " + "bnb借贷抵押率低于" + borrowPercent.toFixed(1));
+    );
+    //console.log(new Date(), "===================================");
+    if (borrowPercent > 89) {
+      cmd.runSync("say " + "bnb借贷抵押率超过" + borrowPercent.toFixed(1));
+    } else if (borrowPercent < 75) {
+      cmd.runSync("say " + "bnb借贷抵押率低于" + borrowPercent.toFixed(1));
+    }
+  } catch (err) {
+    console.log(err);
   }
 }
 
@@ -533,7 +537,7 @@ async function main() {
     } catch (err) {
       console.log(err);
     }
-    await sleep(10000);
+    await sleep(60000);
   }
 }
 
