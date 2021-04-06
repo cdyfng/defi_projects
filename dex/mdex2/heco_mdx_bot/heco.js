@@ -13,6 +13,7 @@ const airdropMDXAbi = require("./abis2/AirdropMDX.json");
 const LErc20Delegator_ABI = require("./abis/LErc20Delegator").abi;
 const oracleAbi = require("./scripts/oracle.json");
 const config = require("./config.json");
+var cmd = require("node-cmd");
 
 // contract
 const provider = new web3(hecoAddress);
@@ -240,72 +241,76 @@ async function lhb_routine() {
 }
 
 async function main() {
-  const mdx_fil = await calculateCoins(
-    "0xfc021c1Ec170C7B320cfD4DE99E83a91e7eAabBc", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
-    process.env.METAMASK_ETH1,
-    6 //MDX/FIL
-  );
+  try {
+    const mdx_fil = await calculateCoins(
+      "0xfc021c1Ec170C7B320cfD4DE99E83a91e7eAabBc", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
+      process.env.METAMASK_ETH1,
+      6 //MDX/FIL
+    );
 
-  const mdx_hbtc = await calculateCoins(
-    "0x2fb4be0f2785bd6009a383f3290cc97a4e3bd46b", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
-    process.env.METAMASK_ETH1,
-    1 //MDX/HBTC
-  );
+    const mdx_hbtc = await calculateCoins(
+      "0x2fb4be0f2785bd6009a383f3290cc97a4e3bd46b", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
+      process.env.METAMASK_ETH1,
+      1 //MDX/HBTC
+    );
 
-  const lp_mdx = mdx_fil.token0 + mdx_hbtc.token0;
-  const lp_fil = mdx_fil.token1;
-  const lp_hbtc = mdx_hbtc.token1;
-  //console.log(lp_mdx, lp_fil, lp_hbtc);
+    const lp_mdx = mdx_fil.token0 + mdx_hbtc.token0;
+    const lp_fil = mdx_fil.token1;
+    const lp_hbtc = mdx_hbtc.token1;
+    //console.log(lp_mdx, lp_fil, lp_hbtc);
 
-  const s = await lhb_routine();
+    const s = await lhb_routine();
 
-  const lhb_usdt =
-    s.USDT.balanceOfUnderlying / 1e18 - s.USDT.borrowBalanceStored / 1e18;
-  const lhb_mdx =
-    s.MDX.balanceOfUnderlying / 1e18 - s.MDX.borrowBalanceStored / 1e18;
-  const lhb_fil =
-    s.FILE.balanceOfUnderlying / 1e18 - s.FILE.borrowBalanceStored / 1e18;
-  const lhb_hbtc =
-    s.HBTC.balanceOfUnderlying / 1e18 - s.HBTC.borrowBalanceStored / 1e18;
-  //console.log(lhb_usdt, lhb_mdx, lhb_fil, lhb_hbtc);
-  //console.log(`Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(3)}FIL`);
+    const lhb_usdt =
+      s.USDT.balanceOfUnderlying / 1e18 - s.USDT.borrowBalanceStored / 1e18;
+    const lhb_mdx =
+      s.MDX.balanceOfUnderlying / 1e18 - s.MDX.borrowBalanceStored / 1e18;
+    const lhb_fil =
+      s.FILE.balanceOfUnderlying / 1e18 - s.FILE.borrowBalanceStored / 1e18;
+    const lhb_hbtc =
+      s.HBTC.balanceOfUnderlying / 1e18 - s.HBTC.borrowBalanceStored / 1e18;
+    //console.log(lhb_usdt, lhb_mdx, lhb_fil, lhb_hbtc);
+    //console.log(`Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(3)}FIL`);
 
-  const init_usdt = config.initial_fund.usdt;
-  const init_hbtc = config.initial_fund.btc;
-  const delta_u = lhb_usdt - init_usdt;
-  const delta_mdx = lhb_mdx + lp_mdx;
-  const delta_fil = lhb_fil + lp_fil;
-  const delta_hbtc = lhb_hbtc + lp_hbtc - init_hbtc;
-  //  console.log(`DELTA: ${delta_u.toFixed(0)}U\
-  // ${delta_mdx.toFixed(0)}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_fil.toFixed(3)}FIL`);
+    const init_usdt = config.initial_fund.usdt;
+    const init_hbtc = config.initial_fund.btc;
+    const delta_u = lhb_usdt - init_usdt;
+    const delta_mdx = lhb_mdx + lp_mdx;
+    const delta_fil = lhb_fil + lp_fil;
+    const delta_hbtc = lhb_hbtc + lp_hbtc - init_hbtc;
+    //  console.log(`DELTA: ${delta_u.toFixed(0)}U\
+    // ${delta_mdx.toFixed(0)}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_fil.toFixed(3)}FIL`);
 
-  const value_hbtc = delta_hbtc * s.HBTC.price;
-  const value_mdx = delta_mdx * s.MDX.price;
-  const value_fil = delta_fil * s.FILE.price;
-  //console.log(`D U: ${delta_u.toFixed(0)}U\
-  // ${value_mdx.toFixed(0)}MDX ${value_hbtc.toFixed(0)}BTC\
-  // ${value_fil.toFixed(0)}FIL`);
+    const value_hbtc = delta_hbtc * s.HBTC.price;
+    const value_mdx = delta_mdx * s.MDX.price;
+    const value_fil = delta_fil * s.FILE.price;
+    //console.log(`D U: ${delta_u.toFixed(0)}U\
+    // ${value_mdx.toFixed(0)}MDX ${value_hbtc.toFixed(0)}BTC\
+    // ${value_fil.toFixed(0)}FIL`);
 
-  console.log(
-    new Date(),
-    `Profit: ${(delta_u + value_hbtc + value_mdx + value_fil).toFixed(
-      0
-    )}U Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(
-      0
-    )}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(
-      3
-    )}FIL LP : ${lp_mdx.toFixed(0)}MDX ${lp_hbtc.toFixed(
-      5
-    )}BTC ${lp_fil.toFixed(3)}FIL DELTA: ${delta_u.toFixed(
-      0
-    )}U ${delta_mdx.toFixed(0)}MDX ${delta_hbtc.toFixed(
-      5
-    )}BTC ${delta_fil.toFixed(3)}FIL D U: ${delta_u.toFixed(
-      0
-    )}U MDX_${value_mdx.toFixed(0)}U BTC_${value_hbtc.toFixed(
-      0
-    )}U FIL_${value_fil.toFixed(0)}U`
-  );
+    console.log(
+      new Date(),
+      `Profit: ${(delta_u + value_hbtc + value_mdx + value_fil).toFixed(
+        0
+      )}U Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(
+        0
+      )}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(
+        3
+      )}FIL LP : ${lp_mdx.toFixed(0)}MDX ${lp_hbtc.toFixed(
+        5
+      )}BTC ${lp_fil.toFixed(3)}FIL DELTA: ${delta_u.toFixed(
+        0
+      )}U ${delta_mdx.toFixed(0)}MDX ${delta_hbtc.toFixed(
+        5
+      )}BTC ${delta_fil.toFixed(3)}FIL D U: ${delta_u.toFixed(
+        0
+      )}U MDX_${value_mdx.toFixed(0)}U BTC_${value_hbtc.toFixed(
+        0
+      )}U FIL_${value_fil.toFixed(0)}U`
+    );
+  } catch (e) {
+    console.log(e);
+  }
 }
 
 const sleep = (n) => new Promise((res, rej) => setTimeout(res, n));

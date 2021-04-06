@@ -1,0 +1,22 @@
+{
+  "node": {
+    "provider": "https://bsc-dataseed1.binance.org/"
+  },
+  "initial_fund": {
+    "usdt": 100000000,
+    "btc": 100
+  },
+  "wallet": {
+    "privateKey": "-"
+  },
+  "bot": {
+    "vault": {
+      "exchangeRate": false,
+      "liquidityFix": 35,
+      "liquidityGap": 5
+    },
+    "tx": {
+      "gasPrice": 15
+    }
+  }
+}
