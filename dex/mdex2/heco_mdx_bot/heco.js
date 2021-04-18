@@ -158,13 +158,23 @@ async function getTokenStatus(
     let balanceOfUnderlying = await tokenContract.methods
       .balanceOfUnderlying(address)
       .call();
+
+    let account_balance = await token_balance(underlyingTokenAddress, address);
     //console.log("balanceOfUnderlying: ", balanceOfUnderlying / 1e18, name);
     //console.log({ borrowBalanceStored, balanceOfUnderlying, price });
-    return { borrowBalanceStored, balanceOfUnderlying, price };
+    return { borrowBalanceStored, balanceOfUnderlying, account_balance, price };
   } catch (e) {
     // statements to handle any exceptions
     console.log(e); // pass exception object to error handler
   }
+}
+
+async function token_balance(token1, address) {
+  let c = new provider.eth.Contract(erc20Abi, token1);
+  return (
+    (await c.methods.balanceOf(address).call()) /
+    Math.pow(10, await c.methods.decimals().call())
+  );
 }
 
 async function lhb_routine() {
@@ -300,15 +310,29 @@ async function main() {
       32 //MDX/HBTC in Liquidity
     );
 
+    const mdx_usdt_pool = await calculatePoolCoins(
+      "0x615E6285c5944540fd8bd921c9c8c56739Fd1E13",
+      account,
+      18,
+      18,
+      16 //MDX/USDT in Liquidity
+    );
+    console.log(
+      "Total Pending MDX:",
+      mdx_hbtc_pool.rewardMdx + mdx_usdt_pool.rewardMdx
+    );
     const lp_mdx =
       mdx_fil.token0 +
       mdx_hbtc.token0 +
       mdx_husd.token1 +
       mdx_hbtc_pool.token0 +
-      mdx_hbtc_pool.rewardMdx;
+      mdx_usdt_pool.token0 +
+      mdx_hbtc_pool.rewardMdx +
+      mdx_usdt_pool.rewardMdx;
     const lp_fil = mdx_fil.token1;
     const lp_hbtc = mdx_hbtc.token1 + mdx_hbtc_pool.token1;
     const lp_husd = mdx_husd.token0;
+    const lp_usdt = mdx_usdt_pool.token1;
     //console.log(lp_mdx, lp_fil, lp_hbtc);
 
     const s = await lhb_routine();
@@ -329,11 +353,18 @@ async function main() {
     const init_usdt = config.initial_fund.usdt;
     const init_hbtc = config.initial_fund.btc;
     const init_mdx = config.initial_fund.mdx;
-
-    const delta_u = lp_husd + lhb_usdt + lhb_husd - init_usdt;
-    const delta_mdx = lhb_mdx + lp_mdx - init_mdx;
-    const delta_fil = lhb_fil + lp_fil;
-    const delta_hbtc = lhb_hbtc + lp_hbtc - init_hbtc;
+    //console.log("b: husd, ", s.HUSD.account_balance)
+    const delta_u =
+      lp_husd +
+      lp_usdt +
+      lhb_usdt +
+      lhb_husd +
+      s.HUSD.account_balance +
+      s.USDT.account_balance -
+      init_usdt;
+    const delta_mdx = lhb_mdx + lp_mdx + s.MDX.account_balance - init_mdx;
+    const delta_fil = lhb_fil + lp_fil + s.FILE.account_balance;
+    const delta_hbtc = lhb_hbtc + lp_hbtc + s.HBTC.account_balance - init_hbtc;
     //  console.log(`DELTA: ${delta_u.toFixed(0)}U\
     // ${delta_mdx.toFixed(0)}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_fil.toFixed(3)}FIL`);
 
@@ -354,7 +385,9 @@ async function main() {
         5
       )}BTC ${lhb_fil.toFixed(3)}FIL LP : ${lp_mdx.toFixed(
         0
-      )}MDX ${lp_husd.toFixed(0)}HUSD ${lp_hbtc.toFixed(5)}BTC ${lp_fil.toFixed(
+      )}MDX ${lp_husd.toFixed(0)}HUSD ${lp_usdt.toFixed(
+        0
+      )}USDT ${lp_hbtc.toFixed(5)}BTC ${lp_fil.toFixed(
         3
       )}FIL DELTA: ${delta_u.toFixed(0)}U ${delta_mdx.toFixed(
         0
@@ -374,6 +407,7 @@ const sleep = (n) => new Promise((res, rej) => setTimeout(res, n));
 async function loop() {
   while (1) {
     try {
+      //console.log('btc', await token_balance("0x66a79d23e58475d2738179ca52cd0b41d73f0bea", account))
       main();
       await sleep(60000);
     } catch (e) {
