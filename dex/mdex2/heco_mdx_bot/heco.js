@@ -45,6 +45,11 @@ const calculateCoins = async (
   const lpAmount = await airdropMDXContract.methods
     .userInfo(pid, myAddress)
     .call();
+  const rewardMdx = await airdropMDXContract.methods
+    .pending(pid, myAddress)
+    .call();
+
+  console.log("MDX pending:", rewardMdx / Math.pow(10, 18));
   //console.log("mine percent:", parseInt(lpAmount.amount) / totalSupply);
   const r = {
     token0:
@@ -55,6 +60,7 @@ const calculateCoins = async (
       ((parseInt(reserves._reserve1) / Math.pow(10, decimals2)) *
         parseInt(lpAmount.amount)) /
       totalSupply,
+    rewardMdx: parseInt(rewardMdx) / Math.pow(10, 18),
   };
   //console.log("r:", r);
   return r;
@@ -319,7 +325,7 @@ async function main() {
     );
     console.log(
       "Total Pending MDX:",
-      mdx_hbtc_pool.rewardMdx + mdx_usdt_pool.rewardMdx
+      mdx_hbtc_pool.rewardMdx + mdx_usdt_pool.rewardMdx + mdx_hbtc.rewardMdx
     );
     const lp_mdx =
       mdx_fil.token0 +
