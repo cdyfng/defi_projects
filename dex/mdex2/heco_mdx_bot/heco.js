@@ -323,8 +323,22 @@ async function main() {
       18,
       16 //MDX/USDT in Liquidity
     );
+
+    const mdx_dot_pool = await calculatePoolCoins(
+      "0x640aeCF73Ca21f1bCAE74c7187CecF77F47c60Ac",
+      account,
+      18,
+      18,
+      0x29 //MDX/HDOT in Liquidity
+    );
+    //MDX DOT
+    //0x640aeCF73Ca21f1bCAE74c7187CecF77F47c60Ac
+
     const rewardMdx =
-      mdx_hbtc_pool.rewardMdx + mdx_usdt_pool.rewardMdx + mdx_hbtc.rewardMdx;
+      mdx_hbtc_pool.rewardMdx +
+      mdx_usdt_pool.rewardMdx +
+      mdx_hbtc.rewardMdx +
+      mdx_dot_pool.rewardMdx;
     console.log("Total Pending MDX:", rewardMdx);
     const lp_mdx =
       mdx_fil.token0 +
@@ -332,11 +346,13 @@ async function main() {
       mdx_husd.token1 +
       mdx_hbtc_pool.token0 +
       mdx_usdt_pool.token0 +
+      mdx_dot_pool.token0 +
       rewardMdx;
     const lp_fil = mdx_fil.token1;
     const lp_hbtc = mdx_hbtc.token1 + mdx_hbtc_pool.token1;
     const lp_husd = mdx_husd.token0;
     const lp_usdt = mdx_usdt_pool.token1;
+    const lp_dot = mdx_dot_pool.token1;
     //console.log(lp_mdx, lp_fil, lp_hbtc);
 
     const s = await lhb_routine();
@@ -351,12 +367,15 @@ async function main() {
       s.HBTC.balanceOfUnderlying / 1e18 - s.HBTC.borrowBalanceStored / 1e18;
     const lhb_husd =
       s.HUSD.balanceOfUnderlying / 1e8 - s.HUSD.borrowBalanceStored / 1e8;
+    const lhb_dot =
+      s.DOT.balanceOfUnderlying / 1e18 - s.DOT.borrowBalanceStored / 1e18;
     //console.log(lhb_usdt, lhb_mdx, lhb_fil, lhb_hbtc);
     //console.log(`Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(3)}FIL`);
 
     const init_usdt = config.initial_fund.usdt;
     const init_hbtc = config.initial_fund.btc;
     const init_mdx = config.initial_fund.mdx;
+    const init_dot = config.initial_fund.dot;
     //console.log("b: husd, ", s.HUSD.account_balance)
     const delta_u =
       lp_husd +
@@ -369,37 +388,43 @@ async function main() {
     const delta_mdx = lhb_mdx + lp_mdx + s.MDX.account_balance - init_mdx;
     const delta_fil = lhb_fil + lp_fil + s.FILE.account_balance;
     const delta_hbtc = lhb_hbtc + lp_hbtc + s.HBTC.account_balance - init_hbtc;
+    const delta_dot = lhb_dot + lp_dot + s.DOT.account_balance - init_dot;
     //  console.log(`DELTA: ${delta_u.toFixed(0)}U\
     // ${delta_mdx.toFixed(0)}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_fil.toFixed(3)}FIL`);
 
     const value_hbtc = delta_hbtc * s.HBTC.price;
     const value_mdx = delta_mdx * s.MDX.price;
     const value_fil = delta_fil * s.FILE.price;
+    const value_dot = delta_dot * s.DOT.price;
     //console.log(`D U: ${delta_u.toFixed(0)}U\
     // ${value_mdx.toFixed(0)}MDX ${value_hbtc.toFixed(0)}BTC\
     // ${value_fil.toFixed(0)}FIL`);
 
     console.log(
       new Date(),
-      `Profit: ${(delta_u + value_hbtc + value_mdx + value_fil).toFixed(
-        0
-      )}U Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_husd.toFixed(
+      `Profit: ${(
+        delta_u +
+        value_hbtc +
+        value_mdx +
+        value_fil +
+        value_dot
+      ).toFixed(0)}U Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_husd.toFixed(
         0
       )}HUSD ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(
         5
-      )}BTC ${lhb_fil.toFixed(3)}FIL LP : ${lp_mdx.toFixed(
+      )}BTC ${lhb_dot.toFixed(3)}DOT LP : ${lp_mdx.toFixed(
         0
       )}MDX ${lp_husd.toFixed(0)}HUSD ${lp_usdt.toFixed(
         0
-      )}USDT ${lp_hbtc.toFixed(5)}BTC ${lp_fil.toFixed(
+      )}USDT ${lp_hbtc.toFixed(5)}BTC ${lp_dot.toFixed(
         3
-      )}FIL DELTA: ${delta_u.toFixed(0)}U ${delta_mdx.toFixed(
+      )}DOT DELTA: ${delta_u.toFixed(0)}U ${delta_mdx.toFixed(
         0
-      )}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_fil.toFixed(
+      )}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_dot.toFixed(
         3
-      )}FIL D U: ${delta_u.toFixed(0)}U MDX_${value_mdx.toFixed(
+      )}DOT D U: ${delta_u.toFixed(0)}U MDX_${value_mdx.toFixed(
         0
-      )}U BTC_${value_hbtc.toFixed(0)}U FIL_${value_fil.toFixed(0)}U`
+      )}U BTC_${value_hbtc.toFixed(0)}U DOT_${value_dot.toFixed(0)}U`
     );
   } catch (e) {
     console.log(e);
