@@ -323,18 +323,16 @@ async function main() {
       18,
       16 //MDX/USDT in Liquidity
     );
-    console.log(
-      "Total Pending MDX:",
-      mdx_hbtc_pool.rewardMdx + mdx_usdt_pool.rewardMdx + mdx_hbtc.rewardMdx
-    );
+    const rewardMdx =
+      mdx_hbtc_pool.rewardMdx + mdx_usdt_pool.rewardMdx + mdx_hbtc.rewardMdx;
+    console.log("Total Pending MDX:", rewardMdx);
     const lp_mdx =
       mdx_fil.token0 +
       mdx_hbtc.token0 +
       mdx_husd.token1 +
       mdx_hbtc_pool.token0 +
       mdx_usdt_pool.token0 +
-      mdx_hbtc_pool.rewardMdx +
-      mdx_usdt_pool.rewardMdx;
+      rewardMdx;
     const lp_fil = mdx_fil.token1;
     const lp_hbtc = mdx_hbtc.token1 + mdx_hbtc_pool.token1;
     const lp_husd = mdx_husd.token0;
