@@ -379,7 +379,7 @@ const mdxTokens = {
   USDT: "0x55d398326f99059ff775485246999027b3197955",
   BUSD: "0xe9e7cea3dedca5984780bafc599bd69add087d56",
   BCH: "0x8ff795a6f4d97e7887c79bea79aba5cc76444adf",
-  //SXP: "0x47bead2563dcbf3bf2c9407fea4dc236faba485a",
+  SXP: "0x47bead2563dcbf3bf2c9407fea4dc236faba485a",
 };
 
 var mdxTokensInverse = new Map();
@@ -388,13 +388,14 @@ for (let val of Object.keys(mdxTokens)) {
 }
 //console.log('reverse:', mdxTokensInverse)
 
-const tokenUSDT = {
-  MDEX: "0xe1cBe92b5375ee6AfE1B22b555D257B4357F6C68",
-  BNB: "0x09CB618bf5eF305FadfD2C8fc0C26EeCf8c6D5fd",
-  BTC: "0xda28Eb7ABa389C1Ea226A420bCE04Cb565Aafb85",
-  // usdt: "0x55d398326f99059ff775485246999027b3197955",
-  BUSD: "0x62c1dEC1fF328DCdC157Ae0068Bb21aF3967aCd9",
+const tokenBUSD = {
+  MDEX: "0x223740a259e461abee12d84a9fff5da69ff071dd",
+  BNB: "0x340192D37d95fB609874B1db6145ED26d1e47744",
+  BTC: "0x4fb8253432FB3e92109c91E3Ff2b85FfA0f6A1F4",
+  USDT: "0x62c1dEC1fF328DCdC157Ae0068Bb21aF3967aCd9",
+  //BUSD: "0x62c1dEC1fF328DCdC157Ae0068Bb21aF3967aCd9",
   //BCH: "", //set price to 0
+  SXP: "0x091331f2231Cc9b87Cac33663371A8484a0a5197", // sxp/busd
   // sxp: "0x47bead2563dcbf3bf2c9407fea4dc236faba485a",
 };
 
@@ -415,7 +416,7 @@ async function tokens_in_wallet() {
       (await mToken[mdxTokens[val]].methods.balanceOf(myAddress).call()) /
       Math.pow(10, await mToken[mdxTokens[val]].methods.decimals().call());
     wallet_token_balance[val] = b;
-    // console.log(b)
+    //console.log('balance', val, b)
   }
   wallet_token_balance["BNB"] += await getEthBalnce(myAddress);
 
@@ -451,6 +452,10 @@ async function tokens_in_pool() {
       "busd",
       18,
     ],
+    //sxp/bnb
+    [0x48, "0x244CB20eFF76c3636C6B0d431aB748D47b326d0c", "sxp", 18, "bnb", 18],
+    //sxp/busd
+    [0x3a, "0x091331f2231cc9b87cac33663371a8484a0a5197", "sxp", 18, "busd", 18],
   ];
 
   for (let val of Object.keys(mdxTokens)) {
@@ -577,14 +582,14 @@ async function tokens_in_board() {
 
 const token_price = {};
 async function getTokensPrice() {
-  //input tokenUSDT
+  //input tokenBUSD
   //output token_price
-  for (let key of Object.keys(tokenUSDT)) {
+  for (let key of Object.keys(tokenBUSD)) {
     //board_token_balance[val] = 0;
-    //console.log(key, tokenUSDT[key])
+    //console.log(key, tokenBUSD[key])
     const currentTokenContract = new web3.eth.Contract(
       mdexPairBSCAbi,
-      tokenUSDT[key]
+      tokenBUSD[key]
     );
     const token0 = (
       await currentTokenContract.methods.token0().call()
@@ -594,19 +599,19 @@ async function getTokensPrice() {
     ).toLowerCase();
     const reserves = await currentTokenContract.methods.getReserves().call();
     //console.log(token0, token1)
-    if (token0 == "0x55d398326f99059ff775485246999027b3197955") {
+    if (token0 == "0xe9e7cea3dedca5984780bafc599bd69add087d56") {
       token_price[key] =
         parseInt(reserves._reserve0) / parseInt(reserves._reserve1);
-    } else if (token1 == "0x55d398326f99059ff775485246999027b3197955") {
+    } else if (token1 == "0xe9e7cea3dedca5984780bafc599bd69add087d56") {
       token_price[key] =
         parseInt(reserves._reserve1) / parseInt(reserves._reserve0);
     } else {
-      console.log("tokenUsdt map error, no USDT include");
+      console.log("tokenBUSD map error, no USDT include");
       process.exit();
     }
   }
   token_price["BCH"] = 0;
-  token_price["USDT"] = 1;
+  token_price["BUSD"] = 1;
 }
 
 let venus_token_balance = {};
@@ -668,7 +673,7 @@ async function main() {
       //console.log('wallet: ', wallet_token_balance);
       let profit = 0;
       for (let val of Object.keys(mdxTokens)) {
-        //onsole.log(val)
+        //console.log(val)
         //console.log(venus_token_balance[val])
         delta[val] =
           wallet_token_balance[val] +
@@ -681,14 +686,14 @@ async function main() {
         //console.log(delta[val], token_price[val])
         profit += delta[val] * token_price[val];
       }
-      // console.log('delta:', delta);
+      //console.log('delta:', delta);
       console.log(
         new Date(),
-        `profit:${profit.toFixed(0)}usdt  ${delta.BNB.toFixed(
+        `profit:${profit.toFixed(0)} BUSD  ${delta.BNB.toFixed(
           3
-        )}BNB, ${delta.BTC.toFixed(6)}BTC ${delta.MDEX.toFixed(
+        )} BNB, ${delta.BTC.toFixed(6)} BTC ${delta.MDEX.toFixed(
           1
-        )}MDEX ${delta.USDT.toFixed(0)}USDT ${delta.BUSD.toFixed(0)}BUSD`
+        )} MDEX ${delta.USDT.toFixed(0)} USDT ${delta.BUSD.toFixed(0)} BUSD`
       );
 
       //caculator profit
