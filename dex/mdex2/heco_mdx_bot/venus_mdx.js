@@ -580,6 +580,69 @@ async function tokens_in_board() {
   }
 }
 
+const board_token_balance2 = {};
+async function tokens_in_board2() {
+  let lps = [
+    //name , address, decimals, lowPrice, highPrice
+    [0x1, "0xe1cbe92b5375ee6afe1b22b555d257b4357f6c68", "usdt", 18, "mdex", 18],
+  ];
+
+  for (let val of Object.keys(mdxTokens)) {
+    board_token_balance2[val] = 0;
+  }
+
+  let setAmount = function (token, amount) {
+    let arr = Object.keys(mdxTokens);
+    //console.log(arr, token)
+    if (arr.indexOf(token) != -1) {
+      //console.log('token:', token, amount)
+      board_token_balance2[token] += amount;
+    } else {
+      console.log("no initial token", token, amount);
+      process.exit();
+    }
+  };
+
+  for (i in lps) {
+    //console.log('i: ',i,  lps[i])
+    let val = lps[i];
+    const pid = val[0];
+    const decimals_0 = val[3];
+    const decimals_1 = val[5];
+    const currentTokenContract = new web3.eth.Contract(mdexPairBSCAbi, val[1]);
+
+    const hecoPoolContract = new web3.eth.Contract(
+      boardRoomHMDXAbi,
+      "0x6aEE12e5Eb987B3bE1BA8e621BE7C4804925bA68"
+    );
+    const totalSupply = await currentTokenContract.methods.totalSupply().call();
+    const reserves = await currentTokenContract.methods.getReserves().call();
+    const lpAmount = await hecoPoolContract.methods
+      .userInfo(pid, myAddress)
+      .call();
+    const token0 = await currentTokenContract.methods.token0().call();
+    const token1 = await currentTokenContract.methods.token1().call();
+    const rewardMdx = await hecoPoolContract.methods
+      .pending(pid, myAddress)
+      .call();
+    //console.log('r:', rewardMdx)
+    //console.log('lpAmount:', lpAmount, parseInt(reserves._reserve0), parseInt(lpAmount.amount), parseInt(totalSupply), decimals_0, decimals_1)
+    setAmount(
+      mdxTokensInverse.get(token0.toLowerCase()),
+      ((parseInt(reserves._reserve0) / Math.pow(10, decimals_0)) *
+        parseInt(lpAmount.amount)) /
+        totalSupply
+    );
+    setAmount(
+      mdxTokensInverse.get(token1.toLowerCase()),
+      ((parseInt(reserves._reserve1) / Math.pow(10, decimals_1)) *
+        parseInt(lpAmount.amount)) /
+        totalSupply
+    );
+    setAmount("MDEX", rewardMdx / Math.pow(10, 18));
+  }
+}
+
 const token_price = {};
 async function getTokensPrice() {
   //input tokenBUSD
@@ -668,6 +731,8 @@ async function main() {
       await tokens_in_board();
       //console.log('board: ', board_token_balance);
 
+      await tokens_in_board2();
+
       //get account balance
       await tokens_in_wallet();
       //console.log('wallet: ', wallet_token_balance);
@@ -678,6 +743,7 @@ async function main() {
         delta[val] =
           wallet_token_balance[val] +
           board_token_balance[val] +
+          board_token_balance2[val] +
           lp_token_balance[val] +
           venus_token_balance[val].supply -
           venus_token_balance[val].borrow -
@@ -691,7 +757,7 @@ async function main() {
         new Date(),
         `profit:${profit.toFixed(0)} BUSD  ${delta.BNB.toFixed(
           3
-        )} BNB, ${delta.BTC.toFixed(6)} BTC ${delta.MDEX.toFixed(
+        )} BNB, ${delta.SXP.toFixed(6)} SXP ${delta.MDEX.toFixed(
           1
         )} MDEX ${delta.USDT.toFixed(0)} USDT ${delta.BUSD.toFixed(0)} BUSD`
       );
@@ -700,7 +766,7 @@ async function main() {
     } catch (err) {
       console.log(err);
     }
-    await sleep(60000);
+    await sleep(120000);
   }
 }
 
