@@ -58,6 +58,7 @@ const tokens = {
   vDAI: "0x334b3eCB4DCa3593BCCC3c7EBD1A1C1d1780FBF1",
   vFIL: "0xf91d58b5aE142DAcC749f58A49FCBac340Cb0343",
   vADA: "0x9A0AF7FDb2065Ce470D72664DE73cAE409dA28Ec",
+  vDOGE: "0xec3422ef92b2fb59e84c8b02ba73f1fe84ed8d71",
 };
 
 const vToken = {};
@@ -380,6 +381,7 @@ const mdxTokens = {
   BUSD: "0xe9e7cea3dedca5984780bafc599bd69add087d56",
   BCH: "0x8ff795a6f4d97e7887c79bea79aba5cc76444adf",
   SXP: "0x47bead2563dcbf3bf2c9407fea4dc236faba485a",
+  DOGE: "0xba2ae424d960c26247dd6c32edc70b295c744c43",
 };
 
 var mdxTokensInverse = new Map();
@@ -389,14 +391,19 @@ for (let val of Object.keys(mdxTokens)) {
 //console.log('reverse:', mdxTokensInverse)
 
 const tokenBUSD = {
-  MDEX: "0x223740a259e461abee12d84a9fff5da69ff071dd",
-  BNB: "0x340192D37d95fB609874B1db6145ED26d1e47744",
-  BTC: "0x4fb8253432FB3e92109c91E3Ff2b85FfA0f6A1F4",
-  USDT: "0x62c1dEC1fF328DCdC157Ae0068Bb21aF3967aCd9",
+  MDEX: ["0x223740a259e461abee12d84a9fff5da69ff071dd", 18],
+  BNB: ["0x340192D37d95fB609874B1db6145ED26d1e47744", 18],
+  BTC: ["0x4fb8253432FB3e92109c91E3Ff2b85FfA0f6A1F4", 18],
+  USDT: ["0x62c1dEC1fF328DCdC157Ae0068Bb21aF3967aCd9", 18],
   //BUSD: "0x62c1dEC1fF328DCdC157Ae0068Bb21aF3967aCd9",
   //BCH: "", //set price to 0
-  SXP: "0x091331f2231Cc9b87Cac33663371A8484a0a5197", // sxp/busd
+  SXP: ["0x091331f2231Cc9b87Cac33663371A8484a0a5197", 18], // sxp/busd
   // sxp: "0x47bead2563dcbf3bf2c9407fea4dc236faba485a",
+};
+
+//Get Price From Token/USDT , when no Token/BUSD
+const tokenUSDT = {
+  DOGE: ["0xF8E9b725e0De8a9546916861c2904b0Eb8805b96", 8],
 };
 
 function getmTokens() {
@@ -456,6 +463,8 @@ async function tokens_in_pool() {
     [0x48, "0x244CB20eFF76c3636C6B0d431aB748D47b326d0c", "sxp", 18, "bnb", 18],
     //sxp/busd
     [0x3a, "0x091331f2231cc9b87cac33663371a8484a0a5197", "sxp", 18, "busd", 18],
+    //dog/usdt
+    [0x4f, "0xf8e9b725e0de8a9546916861c2904b0eb8805b96", "usdt", 18, "doge", 8],
   ];
 
   for (let val of Object.keys(mdxTokens)) {
@@ -496,7 +505,7 @@ async function tokens_in_pool() {
     const rewardMdx = await hecoPoolContract.methods
       .pending(pid, myAddress)
       .call();
-    //console.log('r:', rewardMdx)
+    console.log("lp mdx reaward:", rewardMdx[0] / 1e18);
     //console.log(mdxTokensInverse, token0.toLowerCase())
     //console.log('key', mdxTokensInverse[token0.toLowerCase()])
     //console.log('lpAmount:', lpAmount, parseInt(reserves._reserve0), parseInt(lpAmount.amount), parseInt(totalSupply), decimals_0, decimals_1)
@@ -562,7 +571,7 @@ async function tokens_in_board() {
     const rewardMdx = await hecoPoolContract.methods
       .pending(pid, myAddress)
       .call();
-    //console.log('r:', rewardMdx)
+    console.log("board1 mdx reward:", rewardMdx / 1e18);
     //console.log('lpAmount:', lpAmount, parseInt(reserves._reserve0), parseInt(lpAmount.amount), parseInt(totalSupply), decimals_0, decimals_1)
     setAmount(
       mdxTokensInverse.get(token0.toLowerCase()),
@@ -585,6 +594,7 @@ async function tokens_in_board2() {
   let lps = [
     //name , address, decimals, lowPrice, highPrice
     [0x1, "0xe1cbe92b5375ee6afe1b22b555d257b4357f6c68", "usdt", 18, "mdex", 18],
+    [0x3, "0x1c0276642f2a7cbcf6624d511f34811cdc65212c", "btcb", 18, "mdex", 18],
   ];
 
   for (let val of Object.keys(mdxTokens)) {
@@ -625,7 +635,7 @@ async function tokens_in_board2() {
     const rewardMdx = await hecoPoolContract.methods
       .pending(pid, myAddress)
       .call();
-    //console.log('r:', rewardMdx)
+    console.log("board2 mdx reward:", rewardMdx / 1e18);
     //console.log('lpAmount:', lpAmount, parseInt(reserves._reserve0), parseInt(lpAmount.amount), parseInt(totalSupply), decimals_0, decimals_1)
     setAmount(
       mdxTokensInverse.get(token0.toLowerCase()),
@@ -649,10 +659,10 @@ async function getTokensPrice() {
   //output token_price
   for (let key of Object.keys(tokenBUSD)) {
     //board_token_balance[val] = 0;
-    //console.log(key, tokenBUSD[key])
+    //console.log(key, tokenBUSD[key], tokenBUSD[key][0], tokenBUSD[key][1])
     const currentTokenContract = new web3.eth.Contract(
       mdexPairBSCAbi,
-      tokenBUSD[key]
+      tokenBUSD[key][0]
     );
     const token0 = (
       await currentTokenContract.methods.token0().call()
@@ -672,7 +682,38 @@ async function getTokensPrice() {
       console.log("tokenBUSD map error, no USDT include");
       process.exit();
     }
+    token_price[key] /= Math.pow(10, 18 - tokenBUSD[key][1]);
   }
+
+  //get price from token/usdt pool
+  for (let key of Object.keys(tokenUSDT)) {
+    //board_token_balance[val] = 0;
+    //console.log(key, tokenBUSD[key])
+    const currentTokenContract = new web3.eth.Contract(
+      mdexPairBSCAbi,
+      tokenUSDT[key][0]
+    );
+    const token0 = (
+      await currentTokenContract.methods.token0().call()
+    ).toLowerCase();
+    const token1 = (
+      await currentTokenContract.methods.token1().call()
+    ).toLowerCase();
+    const reserves = await currentTokenContract.methods.getReserves().call();
+    //console.log(token0, token1)
+    if (token0 == "0x55d398326f99059ff775485246999027b3197955") {
+      token_price[key] =
+        parseInt(reserves._reserve0) / parseInt(reserves._reserve1);
+    } else if (token1 == "0x55d398326f99059ff775485246999027b3197955") {
+      token_price[key] =
+        parseInt(reserves._reserve1) / parseInt(reserves._reserve0);
+    } else {
+      console.log("tokenUSDT map error, no USDT include");
+      process.exit();
+    }
+    token_price[key] /= Math.pow(10, 18 - tokenUSDT[key][1]);
+  }
+
   token_price["BCH"] = 0;
   token_price["BUSD"] = 1;
 }
@@ -685,6 +726,7 @@ async function getVenusTokens() {
   }
   let prices = await getOraclePrices(getTokens());
   let vTokens = await getVTokens(getTokens(), myAddress, prices);
+  ////console.log("vTokens: ", vTokens)
   let VAIBorrow = await getVAIBorrow(myAddress);
   //let VAIStake = await getVAIStake(myAddress);
   //let totalSupply = vTokens.reduce((a, b) => a + b.supplyPrice, 0);
@@ -720,6 +762,9 @@ async function main() {
 
       //get venus balance
       await getVenusTokens();
+      //console.log('venus_token_balance:', venus_token_balance);
+      venus_token_balance.DOGE.supply *= Math.pow(10, 10);
+      venus_token_balance.DOGE.borrow *= Math.pow(10, 10);
       //console.log('venus_token_balance:', venus_token_balance);
 
       //get price
@@ -757,7 +802,9 @@ async function main() {
         new Date(),
         `profit:${profit.toFixed(0)} BUSD  ${delta.BNB.toFixed(
           3
-        )} BNB, ${delta.SXP.toFixed(6)} SXP ${delta.MDEX.toFixed(
+        )} BNB, ${delta.BTC.toFixed(6)} BTCB, ${delta.DOGE.toFixed(
+          0
+        )} DOGE,${delta.SXP.toFixed(2)} SXP ${delta.MDEX.toFixed(
           1
         )} MDEX ${delta.USDT.toFixed(0)} USDT ${delta.BUSD.toFixed(0)} BUSD`
       );
