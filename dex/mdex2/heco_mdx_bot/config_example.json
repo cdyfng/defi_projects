@@ -4,16 +4,37 @@
   },
   "initial_fund": {
     "usdt": 100000000,
-    "btc": 100
+    "btc": 100,
+    "mdx": -1,
+    "dot": 1   
   },
+  "bsc_initial_fund": {
+    "USDT": 1.4,
+    "BTC": 927228,
+    "MDEX": 1.45,
+    "DOT": 0,
+    "BNB": -1,
+    "BUSD": 1.8,
+    "BCH": 1.166,
+    "SXP": 0,
+    "DOGE": 0
+  },    
   "warning_rate": {
     "low": 80,
     "high": 87
   },
+  "venus_warning_rate": {
+    "low": 75,
+    "high": 90
+  },      
   "price_coin1": {
     "low": 1.15,
     "high": 2.0
   },
+  "account": {
+    "L6": "0x1",
+    "L5": "0x2"
+  },     
   "wallet": {
     "privateKey": "-"
   },
