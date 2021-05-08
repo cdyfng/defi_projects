@@ -800,6 +800,16 @@ async function main() {
       //console.log('delta:', delta);
       console.log(
         new Date(),
+        ` ${(delta.BNB * token_price.BNB).toFixed(3)} U_BNB, ${(
+          delta.BTC * token_price.BTC
+        ).toFixed(0)} U_BTCB, ${(delta.DOGE * token_price.DOGE).toFixed(
+          0
+        )} U_DOGE,${(delta.SXP * token_price.SXP).toFixed(0)} U_SXP ${(
+          delta.MDEX * token_price.MDEX
+        ).toFixed(1)} U_MDEX  @${token_price.MDEX.toFixed(2)}`
+      );
+      console.log(
+        new Date(),
         `profit:${profit.toFixed(0)} BUSD  ${delta.BNB.toFixed(
           3
         )} BNB, ${delta.BTC.toFixed(6)} BTCB, ${delta.DOGE.toFixed(
@@ -808,7 +818,6 @@ async function main() {
           1
         )} MDEX ${delta.USDT.toFixed(0)} USDT ${delta.BUSD.toFixed(0)} BUSD`
       );
-
       //caculator profit
     } catch (err) {
       console.log(err);
