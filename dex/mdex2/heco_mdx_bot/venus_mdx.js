@@ -594,6 +594,7 @@ async function tokens_in_board2() {
   let lps = [
     //name , address, decimals, lowPrice, highPrice
     [0x1, "0xe1cbe92b5375ee6afe1b22b555d257b4357f6c68", "usdt", 18, "mdex", 18],
+    [0x2, "0x223740a259E461aBeE12D84A9FFF5Da69Ff071dD", "mdex", 18, "busd", 18],
     [0x3, "0x1c0276642f2a7cbcf6624d511f34811cdc65212c", "btcb", 18, "mdex", 18],
   ];
 
