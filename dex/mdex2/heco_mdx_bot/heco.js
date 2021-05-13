@@ -214,6 +214,13 @@ async function lhb_routine() {
     let DOT = "0xa2c49cee16a5e5bdefde931107dc1fae9f7773e3";
     let s7 = await getTokenStatus(account, LDOT, DOT, 18, "DOT");
 
+    let LBCH = "0xd92f6c1bb3296e4a2adaad56fdd8ec499e0582bb";
+    let BCH = "0xef3cebd77e0c52cb6f60875d9306397b5caca375";
+    let s8 = await getTokenStatus(account, LBCH, BCH, 18, "BCH");
+    //bch usdt pair  0x1f0eC8e0096e145f2bf2Cb4950Ed7b52d1cbd35f
+
+    //console.log("s8: ", s8)
+
     //console.log("s5: ", s5);
     let lendingAsset =
       (s1["balanceOfUnderlying"] / 1e18) * s1["price"] +
@@ -222,7 +229,8 @@ async function lhb_routine() {
       (s4["balanceOfUnderlying"] / 1e18) * s4["price"] +
       (s5["balanceOfUnderlying"] / 1e8) * s5["price"] +
       (s6["balanceOfUnderlying"] / 1e18) * s6["price"] +
-      (s7["balanceOfUnderlying"] / 1e18) * s7["price"];
+      (s7["balanceOfUnderlying"] / 1e18) * s7["price"] +
+      (s8["balanceOfUnderlying"] / 1e18) * s8["price"];
     //console.log("lendingAsset:", lendingAsset);
 
     let colateralAsset =
@@ -232,7 +240,8 @@ async function lhb_routine() {
       (s4["balanceOfUnderlying"] / 1e18) * s4["price"] * 0.8 +
       (s5["balanceOfUnderlying"] / 1e8) * s5["price"] * 0.9 +
       (s6["balanceOfUnderlying"] / 1e18) * s6["price"] * 0.5 +
-      (s7["balanceOfUnderlying"] / 1e18) * s7["price"] * 0.7;
+      (s7["balanceOfUnderlying"] / 1e18) * s7["price"] * 0.7 +
+      (s8["balanceOfUnderlying"] / 1e18) * s8["price"] * 0.8;
 
     //console.log("colateralAsset:", colateralAsset);
     let borrowingAsset =
@@ -242,7 +251,8 @@ async function lhb_routine() {
       (s4["borrowBalanceStored"] / 1e18) * s4["price"] +
       (s5["borrowBalanceStored"] / 1e8) * s5["price"] +
       (s6["borrowBalanceStored"] / 1e18) * s6["price"] +
-      (s7["borrowBalanceStored"] / 1e18) * s7["price"];
+      (s7["borrowBalanceStored"] / 1e18) * s7["price"] +
+      (s8["borrowBalanceStored"] / 1e18) * s8["price"];
     //console.log("borrowingAsset:", borrowingAsset);
 
     let rate = (borrowingAsset / colateralAsset).toFixed(4);
@@ -272,7 +282,16 @@ async function lhb_routine() {
       cmd.runSync("say " + "使用率小于" + (rate * 100).toFixed(2));
       console.log(new Date() + "使用率小于" + rate * 100);
     }
-    return { HBTC: s1, MDX: s2, USDT: s3, HT: s4, HUSD: s5, FILE: s6, DOT: s7 };
+    return {
+      HBTC: s1,
+      MDX: s2,
+      USDT: s3,
+      HT: s4,
+      HUSD: s5,
+      FILE: s6,
+      DOT: s7,
+      BCH: s8,
+    };
   } catch (e) {
     // statements to handle any exceptions
     console.log(e); // pass exception object to error handler
@@ -334,11 +353,20 @@ async function main() {
     //MDX DOT
     //0x640aeCF73Ca21f1bCAE74c7187CecF77F47c60Ac
 
+    const usdt_hbch_pool = await calculatePoolCoins(
+      "0x1f0ec8e0096e145f2bf2cb4950ed7b52d1cbd35f",
+      account,
+      18,
+      18,
+      0x0c //BCH/USDT in Liquidity
+    );
+
     const rewardMdx =
       mdx_hbtc_pool.rewardMdx +
       mdx_usdt_pool.rewardMdx +
       mdx_hbtc.rewardMdx +
-      mdx_dot_pool.rewardMdx;
+      mdx_dot_pool.rewardMdx +
+      usdt_hbch_pool.rewardMdx;
     console.log("Total Pending MDX:", rewardMdx);
     const lp_mdx =
       mdx_fil.token0 +
@@ -351,9 +379,10 @@ async function main() {
     const lp_fil = mdx_fil.token1;
     const lp_hbtc = mdx_hbtc.token1 + mdx_hbtc_pool.token1;
     const lp_husd = mdx_husd.token0;
-    const lp_usdt = mdx_usdt_pool.token1;
+    const lp_usdt = mdx_usdt_pool.token1 + usdt_hbch_pool.token0;
     const lp_dot = mdx_dot_pool.token1;
-    //console.log(lp_mdx, lp_fil, lp_hbtc);
+    const lp_bch = usdt_hbch_pool.token1;
+    //console.log('lp:', lp_mdx, lp_fil, lp_hbtc, lp_bch);
 
     const s = await lhb_routine();
 
@@ -369,6 +398,9 @@ async function main() {
       s.HUSD.balanceOfUnderlying / 1e8 - s.HUSD.borrowBalanceStored / 1e8;
     const lhb_dot =
       s.DOT.balanceOfUnderlying / 1e18 - s.DOT.borrowBalanceStored / 1e18;
+    const lhb_bch =
+      s.BCH.balanceOfUnderlying / 1e18 - s.BCH.borrowBalanceStored / 1e18;
+
     //console.log(lhb_usdt, lhb_mdx, lhb_fil, lhb_hbtc);
     //console.log(`Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(3)}FIL`);
 
@@ -376,6 +408,8 @@ async function main() {
     const init_hbtc = config.initial_fund.btc;
     const init_mdx = config.initial_fund.mdx;
     const init_dot = config.initial_fund.dot;
+    const init_bch = config.initial_fund.bch;
+    //console.log("init_bch", init_bch)
     //console.log("b: husd, ", s.HUSD.account_balance)
     const delta_u =
       lp_husd +
@@ -389,6 +423,14 @@ async function main() {
     const delta_fil = lhb_fil + lp_fil + s.FILE.account_balance;
     const delta_hbtc = lhb_hbtc + lp_hbtc + s.HBTC.account_balance - init_hbtc;
     const delta_dot = lhb_dot + lp_dot + s.DOT.account_balance - init_dot;
+    const delta_bch = lhb_bch + lp_bch - s.BCH.account_balance - init_bch;
+    console.log(
+      "delta_bch:",
+      lp_bch,
+      s.BCH.account_balance,
+      init_bch,
+      delta_bch
+    );
     //  console.log(`DELTA: ${delta_u.toFixed(0)}U\
     // ${delta_mdx.toFixed(0)}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_fil.toFixed(3)}FIL`);
 
@@ -396,6 +438,7 @@ async function main() {
     const value_mdx = delta_mdx * s.MDX.price;
     const value_fil = delta_fil * s.FILE.price;
     const value_dot = delta_dot * s.DOT.price;
+    const value_bch = delta_bch * s.BCH.price;
     //console.log(`D U: ${delta_u.toFixed(0)}U\
     // ${value_mdx.toFixed(0)}MDX ${value_hbtc.toFixed(0)}BTC\
     // ${value_fil.toFixed(0)}FIL`);
@@ -407,12 +450,13 @@ async function main() {
         value_hbtc +
         value_mdx +
         value_fil +
-        value_dot
+        value_dot +
+        value_bch
       ).toFixed(0)}U Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_husd.toFixed(
         0
       )}HUSD ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(
         5
-      )}BTC ${lhb_dot.toFixed(3)}DOT LP : ${lp_mdx.toFixed(
+      )}BTC ${lhb_bch.toFixed(2)}BCH LP : ${lp_mdx.toFixed(
         0
       )}MDX ${lp_husd.toFixed(0)}HUSD ${lp_usdt.toFixed(
         0
@@ -420,11 +464,11 @@ async function main() {
         3
       )}DOT DELTA: ${delta_u.toFixed(0)}U ${delta_mdx.toFixed(
         0
-      )}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_dot.toFixed(
-        3
-      )}DOT D U: ${delta_u.toFixed(0)}U MDX_${value_mdx.toFixed(
+      )}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_bch.toFixed(
+        2
+      )}BCH D U: ${delta_u.toFixed(0)}U MDX_${value_mdx.toFixed(
         0
-      )}U BTC_${value_hbtc.toFixed(0)}U DOT_${value_dot.toFixed(0)}U`
+      )}U BTC_${value_hbtc.toFixed(0)}U BCH_${value_bch.toFixed(0)}U`
     );
   } catch (e) {
     console.log(e);
