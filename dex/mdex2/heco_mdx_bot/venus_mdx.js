@@ -382,6 +382,7 @@ const mdxTokens = {
   BCH: "0x8ff795a6f4d97e7887c79bea79aba5cc76444adf",
   SXP: "0x47bead2563dcbf3bf2c9407fea4dc236faba485a",
   DOGE: "0xba2ae424d960c26247dd6c32edc70b295c744c43",
+  XVS: "0xcf6bb5389c92bdda8a3747ddb454cb7a64626c63",
 };
 
 var mdxTokensInverse = new Map();
@@ -398,6 +399,7 @@ const tokenBUSD = {
   //BUSD: "0x62c1dEC1fF328DCdC157Ae0068Bb21aF3967aCd9",
   //BCH: "", //set price to 0
   SXP: ["0x091331f2231Cc9b87Cac33663371A8484a0a5197", 18], // sxp/busd
+  XVS: ["0xfa4f77c240eb9c1ce45344ce4b6d4b4bacc7c09b", 18],
   // sxp: "0x47bead2563dcbf3bf2c9407fea4dc236faba485a",
 };
 
@@ -465,6 +467,8 @@ async function tokens_in_pool() {
     [0x3a, "0x091331f2231cc9b87cac33663371a8484a0a5197", "sxp", 18, "busd", 18],
     //dog/usdt
     [0x4f, "0xf8e9b725e0de8a9546916861c2904b0eb8805b96", "usdt", 18, "doge", 8],
+    //xvs/busd
+    [0x3b, "0xfa4f77c240eb9c1ce45344ce4b6d4b4bacc7c09b", "xvs", 18, "busd", 18],
   ];
 
   for (let val of Object.keys(mdxTokens)) {
@@ -805,9 +809,11 @@ async function main() {
           delta.BTC * token_price.BTC
         ).toFixed(0)} U_BTCB, ${(delta.DOGE * token_price.DOGE).toFixed(
           0
-        )} U_DOGE,${(delta.SXP * token_price.SXP).toFixed(0)} U_SXP ${(
-          delta.MDEX * token_price.MDEX
-        ).toFixed(1)} U_MDEX  @${token_price.MDEX.toFixed(2)}`
+        )} U_DOGE, ${(delta.SXP * token_price.SXP).toFixed(0)} U_SXP, ${(
+          delta.XVS * token_price.XVS
+        ).toFixed(0)} U_XVS, ${(delta.MDEX * token_price.MDEX).toFixed(
+          1
+        )} U_MDEX  @${token_price.MDEX.toFixed(2)}`
       );
       console.log(
         new Date(),
@@ -815,9 +821,11 @@ async function main() {
           3
         )} BNB, ${delta.BTC.toFixed(6)} BTCB, ${delta.DOGE.toFixed(
           0
-        )} DOGE,${delta.SXP.toFixed(2)} SXP ${delta.MDEX.toFixed(
-          1
-        )} MDEX ${delta.USDT.toFixed(0)} USDT ${delta.BUSD.toFixed(0)} BUSD`
+        )} DOGE, ${delta.SXP.toFixed(2)} SXP, ${delta.XVS.toFixed(
+          2
+        )} XVS, ${delta.MDEX.toFixed(1)} MDEX, ${delta.USDT.toFixed(
+          0
+        )} USDT, ${delta.BUSD.toFixed(0)} BUSD`
       );
       //caculator profit
     } catch (err) {
