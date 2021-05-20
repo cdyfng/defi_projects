@@ -66,6 +66,47 @@ const calculateCoins = async (
   return r;
 };
 
+const calculateHTAirDorpCoins = async (
+  lpAddresses,
+  myAddress,
+  decimals1,
+  decimals2,
+  pid
+) => {
+  const currentTokenContract = new provider.eth.Contract(
+    mdexPairAbi,
+    lpAddresses
+  );
+  const airdropMDXContract = new provider.eth.Contract(
+    airdropMDXAbi,
+    "0x9197d717a4F45B672aCacaB4CC0C6e09222f8695"
+  );
+  const totalSupply = await currentTokenContract.methods.totalSupply().call();
+  const reserves = await currentTokenContract.methods.getReserves().call();
+  const lpAmount = await airdropMDXContract.methods
+    .userInfo(pid, myAddress)
+    .call();
+  const rewardWHT = await airdropMDXContract.methods
+    .pending(pid, myAddress)
+    .call();
+
+  console.log("WHT pending:", rewardWHT / Math.pow(10, 18));
+  //console.log("mine percent:", parseInt(lpAmount.amount) / totalSupply);
+  const r = {
+    token0:
+      ((parseInt(reserves._reserve0) / Math.pow(10, decimals1)) *
+        parseInt(lpAmount.amount)) /
+      totalSupply,
+    token1:
+      ((parseInt(reserves._reserve1) / Math.pow(10, decimals2)) *
+        parseInt(lpAmount.amount)) /
+      totalSupply,
+    rewardWHT: parseInt(rewardWHT) / Math.pow(10, 18),
+  };
+  //console.log("r:", r);
+  return r;
+};
+
 const calculatePoolCoins = async (
   lpAddresses,
   myAddress,
@@ -123,6 +164,10 @@ const getPrice = async (address, decimals) => {
   }
 };
 
+async function getEthBalnce(account) {
+  return (await provider.eth.getBalance(account)) / 1e18;
+}
+
 async function getTokenStatus(
   address,
   lTokenAddress,
@@ -166,6 +211,10 @@ async function getTokenStatus(
       .call();
 
     let account_balance = await token_balance(underlyingTokenAddress, address);
+    if (underlyingTokenAddress == "0x5545153ccfca01fbd7dd11c0b23ba694d9509a6f")
+      //wht
+      account_balance += await getEthBalnce(address);
+
     //console.log("balanceOfUnderlying: ", balanceOfUnderlying / 1e18, name);
     //console.log({ borrowBalanceStored, balanceOfUnderlying, price });
     return { borrowBalanceStored, balanceOfUnderlying, account_balance, price };
@@ -282,6 +331,7 @@ async function lhb_routine() {
       cmd.runSync("say " + "使用率小于" + (rate * 100).toFixed(2));
       console.log(new Date() + "使用率小于" + rate * 100);
     }
+
     return {
       HBTC: s1,
       MDX: s2,
@@ -361,6 +411,22 @@ async function main() {
       0x0c //BCH/USDT in Liquidity
     );
 
+    const mdx_usdt_airdrop_ht = await calculateHTAirDorpCoins(
+      "0x615E6285c5944540fd8bd921c9c8c56739Fd1E13",
+      account,
+      18,
+      18,
+      0x0 //MDX/USDT in HT airdrop boardroom
+    );
+
+    const mdx_wht_airdrop_ht = await calculateHTAirDorpCoins(
+      "0x6dd2993b50b365c707718b0807fc4e344c072ec2",
+      account,
+      18,
+      18,
+      0x2 //MDX/WHT in HT airdrop boardroom
+    );
+
     const rewardMdx =
       mdx_hbtc_pool.rewardMdx +
       mdx_usdt_pool.rewardMdx +
@@ -375,14 +441,21 @@ async function main() {
       mdx_hbtc_pool.token0 +
       mdx_usdt_pool.token0 +
       mdx_dot_pool.token0 +
+      mdx_usdt_airdrop_ht.token0 +
+      mdx_wht_airdrop_ht.token0 +
       rewardMdx;
     const lp_fil = mdx_fil.token1;
     const lp_hbtc = mdx_hbtc.token1 + mdx_hbtc_pool.token1;
     const lp_husd = mdx_husd.token0;
-    const lp_usdt = mdx_usdt_pool.token1 + usdt_hbch_pool.token0;
+    const lp_usdt =
+      mdx_usdt_pool.token1 + usdt_hbch_pool.token0 + mdx_usdt_airdrop_ht.token1;
     const lp_dot = mdx_dot_pool.token1;
     const lp_bch = usdt_hbch_pool.token1;
     //console.log('lp:', lp_mdx, lp_fil, lp_hbtc, lp_bch);
+    const lp_wht =
+      mdx_usdt_airdrop_ht.rewardWHT +
+      mdx_wht_airdrop_ht.token1 +
+      mdx_wht_airdrop_ht.rewardWHT;
 
     const s = await lhb_routine();
 
@@ -401,6 +474,9 @@ async function main() {
     const lhb_bch =
       s.BCH.balanceOfUnderlying / 1e18 - s.BCH.borrowBalanceStored / 1e18;
 
+    const lhb_wht =
+      s.HT.balanceOfUnderlying / 1e18 - s.HT.borrowBalanceStored / 1e18;
+
     //console.log(lhb_usdt, lhb_mdx, lhb_fil, lhb_hbtc);
     //console.log(`Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(3)}FIL`);
 
@@ -409,6 +485,7 @@ async function main() {
     const init_mdx = config.initial_fund.mdx;
     const init_dot = config.initial_fund.dot;
     const init_bch = config.initial_fund.bch;
+    const init_wht = config.initial_fund.wht;
     //console.log("init_bch", init_bch)
     //console.log("b: husd, ", s.HUSD.account_balance)
     const delta_u =
@@ -423,13 +500,15 @@ async function main() {
     const delta_fil = lhb_fil + lp_fil + s.FILE.account_balance;
     const delta_hbtc = lhb_hbtc + lp_hbtc + s.HBTC.account_balance - init_hbtc;
     const delta_dot = lhb_dot + lp_dot + s.DOT.account_balance - init_dot;
-    const delta_bch = lhb_bch + lp_bch - s.BCH.account_balance - init_bch;
+    const delta_bch = lhb_bch + lp_bch + s.BCH.account_balance - init_bch;
+    const delta_wht = lhb_wht + lp_wht + s.HT.account_balance - init_wht;
     console.log(
-      "delta_bch:",
-      lp_bch,
-      s.BCH.account_balance,
-      init_bch,
-      delta_bch
+      "delta_wht:",
+      lhb_wht,
+      lp_wht,
+      s.HT.account_balance,
+      init_wht,
+      delta_wht
     );
     //  console.log(`DELTA: ${delta_u.toFixed(0)}U\
     // ${delta_mdx.toFixed(0)}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_fil.toFixed(3)}FIL`);
@@ -439,6 +518,7 @@ async function main() {
     const value_fil = delta_fil * s.FILE.price;
     const value_dot = delta_dot * s.DOT.price;
     const value_bch = delta_bch * s.BCH.price;
+    const value_wht = delta_wht * s.HT.price;
     //console.log(`D U: ${delta_u.toFixed(0)}U\
     // ${value_mdx.toFixed(0)}MDX ${value_hbtc.toFixed(0)}BTC\
     // ${value_fil.toFixed(0)}FIL`);
@@ -451,12 +531,13 @@ async function main() {
         value_mdx +
         value_fil +
         value_dot +
-        value_bch
+        value_bch +
+        value_wht
       ).toFixed(0)}U Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_husd.toFixed(
         0
       )}HUSD ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(
         5
-      )}BTC ${lhb_bch.toFixed(2)}BCH LP : ${lp_mdx.toFixed(
+      )}BTC ${lhb_wht.toFixed(2)}WHT LP : ${lp_mdx.toFixed(
         0
       )}MDX ${lp_husd.toFixed(0)}HUSD ${lp_usdt.toFixed(
         0
@@ -464,11 +545,11 @@ async function main() {
         3
       )}DOT DELTA: ${delta_u.toFixed(0)}U ${delta_mdx.toFixed(
         0
-      )}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_bch.toFixed(
+      )}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_wht.toFixed(
         2
-      )}BCH D U: ${delta_u.toFixed(0)}U MDX_${value_mdx.toFixed(
+      )}WHT D U: ${delta_u.toFixed(0)}U MDX_${value_mdx.toFixed(
         0
-      )}U BTC_${value_hbtc.toFixed(0)}U BCH_${value_bch.toFixed(0)}U`
+      )}U BTC_${value_hbtc.toFixed(0)}U WHT${value_wht.toFixed(0)}U`
     );
   } catch (e) {
     console.log(e);
