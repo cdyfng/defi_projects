@@ -469,6 +469,15 @@ async function tokens_in_pool() {
     [0x4f, "0xf8e9b725e0de8a9546916861c2904b0eb8805b96", "usdt", 18, "doge", 8],
     //xvs/busd
     [0x3b, "0xfa4f77c240eb9c1ce45344ce4b6d4b4bacc7c09b", "xvs", 18, "busd", 18],
+    //wbnb/usdt
+    [
+      0x1f,
+      "0x09cb618bf5ef305fadfd2c8fc0c26eecf8c6d5fd",
+      "wbnb",
+      18,
+      "usdt",
+      18,
+    ],
   ];
 
   for (let val of Object.keys(mdxTokens)) {
@@ -744,6 +753,11 @@ async function getVenusTokens() {
     cmd.runSync("say " + "bnb借贷抵押率超过" + borrowPercent.toFixed(1));
   } else if (borrowPercent < config.venus_warning_rate.low) {
     cmd.runSync("say " + "bnb借贷抵押率低于" + borrowPercent.toFixed(1));
+  } else if (g_cnt++ % 5 == 0) {
+    //10分钟，会提醒一次使用率
+    if (time_range("7:00", "22:00")) {
+      cmd.runSync("say " + "BNB使用率" + borrowPercent.toFixed(1));
+    }
   }
   //let delta = {}
   //console.log("vTokens:", vTokens);
@@ -755,8 +769,36 @@ async function getVenusTokens() {
     };
   }
 }
+
+function time_range(beginTime, endTime) {
+  var strb = beginTime.split(":");
+  if (strb.length != 2) {
+    return false;
+  }
+  var stre = endTime.split(":");
+  if (stre.length != 2) {
+    return false;
+  }
+  var b = new Date();
+  var e = new Date();
+  var n = new Date();
+  b.setHours(strb[0]);
+  b.setMinutes(strb[1]);
+  e.setHours(stre[0]);
+  e.setMinutes(stre[1]);
+  console.log("n", n, b, e);
+  if (n.getTime() - b.getTime() > 0 && n.getTime() - e.getTime() < 0) {
+    console.log(true);
+    return true;
+  } else {
+    console.log(false);
+    return false;
+  }
+}
+
 //await calculator();
 const myAddress = config.account.L5;
+let g_cnt = 0;
 
 async function main() {
   while (1) {

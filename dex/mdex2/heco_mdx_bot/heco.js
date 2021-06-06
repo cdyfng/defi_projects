@@ -107,6 +107,32 @@ const calculateHTAirDorpCoins = async (
   return r;
 };
 
+const calculateHTAirDorpCoinsSingleMDX = async (myAddress) => {
+  const pid = 1; //mdx -> wht
+  const airdropMDXContract = new provider.eth.Contract(
+    airdropMDXAbi,
+    "0x9197d717a4F45B672aCacaB4CC0C6e09222f8695"
+  );
+
+  const mdxAmount = await airdropMDXContract.methods
+    .userInfo(pid, myAddress)
+    .call();
+
+  const rewardWHT = await airdropMDXContract.methods
+    .pending(pid, myAddress)
+    .call();
+
+  console.log("WHT pending:", rewardWHT / Math.pow(10, 18));
+  //console.log("mine percent:", parseInt(lpAmount.amount) / totalSupply);
+  //console.log("r:", parseInt(mdxAmount.amount), parseInt(rewardWHT));
+  const r = {
+    mdx: parseInt(mdxAmount.amount) / Math.pow(10, 18),
+    rewardWHT: parseInt(rewardWHT) / Math.pow(10, 18),
+  };
+  console.log("r:", r);
+  return r;
+};
+
 const calculatePoolCoins = async (
   lpAddresses,
   myAddress,
@@ -330,6 +356,11 @@ async function lhb_routine() {
     } else if (rate * 100 < config.warning_rate.low) {
       cmd.runSync("say " + "使用率小于" + (rate * 100).toFixed(2));
       console.log(new Date() + "使用率小于" + rate * 100);
+    } else if (g_cnt++ % 10 == 0) {
+      //10分钟，会提醒一次使用率
+      if (time_range("7:00", "22:00")) {
+        cmd.runSync("say " + "MDX使用率" + (rate * 100).toFixed(2));
+      }
     }
 
     return {
@@ -351,6 +382,7 @@ async function lhb_routine() {
   //process.exit();
 }
 
+let g_cnt = 0;
 async function main() {
   try {
     const mdx_fil = await calculateCoins(
@@ -411,6 +443,14 @@ async function main() {
       0x0c //BCH/USDT in Liquidity
     );
 
+    const wht_hdot_pool = await calculatePoolCoins(
+      "0xcd9a26b6af1445cd48f86bd583c70e46ea6e474b",
+      account,
+      18,
+      18,
+      0x30 //Hodt/Wht in Liquidity
+    );
+
     const mdx_usdt_airdrop_ht = await calculateHTAirDorpCoins(
       "0x615E6285c5944540fd8bd921c9c8c56739Fd1E13",
       account,
@@ -427,12 +467,19 @@ async function main() {
       0x2 //MDX/WHT in HT airdrop boardroom
     );
 
+    const mdx_airdrop_ht = await calculateHTAirDorpCoinsSingleMDX(
+      account
+      //1 : MDX -> WHT  airdrop boardroom
+    );
+
     const rewardMdx =
       mdx_hbtc_pool.rewardMdx +
       mdx_usdt_pool.rewardMdx +
       mdx_hbtc.rewardMdx +
       mdx_dot_pool.rewardMdx +
-      usdt_hbch_pool.rewardMdx;
+      usdt_hbch_pool.rewardMdx +
+      wht_hdot_pool.rewardMdx;
+
     console.log("Total Pending MDX:", rewardMdx);
     const lp_mdx =
       mdx_fil.token0 +
@@ -443,19 +490,22 @@ async function main() {
       mdx_dot_pool.token0 +
       mdx_usdt_airdrop_ht.token0 +
       mdx_wht_airdrop_ht.token0 +
+      mdx_airdrop_ht.mdx +
       rewardMdx;
     const lp_fil = mdx_fil.token1;
     const lp_hbtc = mdx_hbtc.token1 + mdx_hbtc_pool.token1;
     const lp_husd = mdx_husd.token0;
     const lp_usdt =
       mdx_usdt_pool.token1 + usdt_hbch_pool.token0 + mdx_usdt_airdrop_ht.token1;
-    const lp_dot = mdx_dot_pool.token1;
+    const lp_dot = mdx_dot_pool.token1 + wht_hdot_pool.token1;
     const lp_bch = usdt_hbch_pool.token1;
     //console.log('lp:', lp_mdx, lp_fil, lp_hbtc, lp_bch);
     const lp_wht =
       mdx_usdt_airdrop_ht.rewardWHT +
       mdx_wht_airdrop_ht.token1 +
-      mdx_wht_airdrop_ht.rewardWHT;
+      mdx_wht_airdrop_ht.rewardWHT +
+      mdx_airdrop_ht.rewardWHT +
+      wht_hdot_pool.token0;
 
     const s = await lhb_routine();
 
@@ -522,7 +572,14 @@ async function main() {
     //console.log(`D U: ${delta_u.toFixed(0)}U\
     // ${value_mdx.toFixed(0)}MDX ${value_hbtc.toFixed(0)}BTC\
     // ${value_fil.toFixed(0)}FIL`);
-
+    console.log(
+      "value: ",
+      value_hbtc,
+      value_fil,
+      value_dot,
+      value_bch,
+      value_wht
+    );
     console.log(
       new Date(),
       `Profit: ${(
@@ -535,9 +592,9 @@ async function main() {
         value_wht
       ).toFixed(0)}U Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_husd.toFixed(
         0
-      )}HUSD ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(
+      )}HUSD ${lhb_mdx.toFixed(0)}Mdx ${lhb_dot.toFixed(
         5
-      )}BTC ${lhb_wht.toFixed(2)}WHT LP : ${lp_mdx.toFixed(
+      )}DOT ${lhb_wht.toFixed(2)}WHT LP : ${lp_mdx.toFixed(
         0
       )}MDX ${lp_husd.toFixed(0)}HUSD ${lp_usdt.toFixed(
         0
@@ -545,7 +602,7 @@ async function main() {
         3
       )}DOT DELTA: ${delta_u.toFixed(0)}U ${delta_mdx.toFixed(
         0
-      )}MDX ${delta_hbtc.toFixed(5)}BTC ${delta_wht.toFixed(
+      )}MDX ${delta_dot.toFixed(5)}DOT ${delta_wht.toFixed(
         2
       )}WHT D U: ${delta_u.toFixed(0)}U MDX_${value_mdx.toFixed(
         0
@@ -558,10 +615,37 @@ async function main() {
 
 const sleep = (n) => new Promise((res, rej) => setTimeout(res, n));
 
+function time_range(beginTime, endTime) {
+  var strb = beginTime.split(":");
+  if (strb.length != 2) {
+    return false;
+  }
+  var stre = endTime.split(":");
+  if (stre.length != 2) {
+    return false;
+  }
+  var b = new Date();
+  var e = new Date();
+  var n = new Date();
+  b.setHours(strb[0]);
+  b.setMinutes(strb[1]);
+  e.setHours(stre[0]);
+  e.setMinutes(stre[1]);
+  console.log("n", n, b, e);
+  if (n.getTime() - b.getTime() > 0 && n.getTime() - e.getTime() < 0) {
+    console.log(true);
+    return true;
+  } else {
+    console.log(false);
+    return false;
+  }
+}
+
 async function loop() {
   while (1) {
     try {
       //console.log('btc', await token_balance("0x66a79d23e58475d2738179ca52cd0b41d73f0bea", account))
+
       main();
       await sleep(60000);
     } catch (e) {
