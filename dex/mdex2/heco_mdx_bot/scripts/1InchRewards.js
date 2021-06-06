@@ -113,6 +113,24 @@ async function getFloatBankReward(address) {
   console.log("Earned: ", earned / 1e18, "Bank");
 }
 
+async function getO3Reward(address) {
+  const stakingRewards = "0xE6D6E0924005d2F3c977Efc768bED7a121670859";
+  const gaugeABI = require("../abis/O3Staking").abi;
+  //
+  // Instantiate token contract object with JSON ABI and address
+  console.log("Gauge Address:", stakingRewards);
+  const tokenContract = new web3.eth.Contract(
+    gaugeABI,
+    stakingRewards,
+    (error, result) => {
+      if (error) console.log(error);
+      console.log("result:", result);
+    }
+  );
+  let earned = await tokenContract.methods.getTotalProfit(address).call();
+  console.log("Earned: ", earned / 1e18, "O3");
+}
+
 async function main() {
   const bbtcGauge = "0xdFc7AdFa664b08767b735dE28f9E84cd30492aeE";
   const usdnGauge = "0xF98450B5602fa59CC66e1379DFfB6FDDc724CfC4";
@@ -124,6 +142,7 @@ async function main() {
   await getCurvehReward(usdnGauge, process.env.L2);
   await getInverseReward(process.env.M11);
   await getFloatBankReward(process.env.L2);
+  await getO3Reward(process.env.L2);
 
   process.exit();
 }
