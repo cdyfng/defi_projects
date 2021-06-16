@@ -451,6 +451,14 @@ async function main() {
       0x30 //Hodt/Wht in Liquidity
     );
 
+    const hdot_usdt_pool = await calculatePoolCoins(
+      "0x5484ab0df3e51187f83f7f6b1a13f7a7ee98c368",
+      account,
+      18,
+      18,
+      0xd //Hodt/usdt in Liquidity
+    );
+
     const mdx_usdt_airdrop_ht = await calculateHTAirDorpCoins(
       "0x615E6285c5944540fd8bd921c9c8c56739Fd1E13",
       account,
@@ -478,7 +486,8 @@ async function main() {
       mdx_hbtc.rewardMdx +
       mdx_dot_pool.rewardMdx +
       usdt_hbch_pool.rewardMdx +
-      wht_hdot_pool.rewardMdx;
+      wht_hdot_pool.rewardMdx +
+      hdot_usdt_pool.rewardMdx;
 
     console.log("Total Pending MDX:", rewardMdx);
     const lp_mdx =
@@ -496,8 +505,12 @@ async function main() {
     const lp_hbtc = mdx_hbtc.token1 + mdx_hbtc_pool.token1;
     const lp_husd = mdx_husd.token0;
     const lp_usdt =
-      mdx_usdt_pool.token1 + usdt_hbch_pool.token0 + mdx_usdt_airdrop_ht.token1;
-    const lp_dot = mdx_dot_pool.token1 + wht_hdot_pool.token1;
+      mdx_usdt_pool.token1 +
+      usdt_hbch_pool.token0 +
+      mdx_usdt_airdrop_ht.token1 +
+      hdot_usdt_pool.token1;
+    const lp_dot =
+      mdx_dot_pool.token1 + wht_hdot_pool.token1 + hdot_usdt_pool.token0;
     const lp_bch = usdt_hbch_pool.token1;
     //console.log('lp:', lp_mdx, lp_fil, lp_hbtc, lp_bch);
     const lp_wht =
@@ -646,7 +659,7 @@ async function loop() {
     try {
       //console.log('btc', await token_balance("0x66a79d23e58475d2738179ca52cd0b41d73f0bea", account))
 
-      main();
+      await main();
       await sleep(60000);
     } catch (e) {
       // statements to handle any exceptions
