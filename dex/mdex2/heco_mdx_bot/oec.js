@@ -12,6 +12,7 @@ const mdxTokens = {
   BTCK: "0x54e4622dc504176b3bb432dccaf504569699a7ff",
   USDT: "0x382bb369d343125bfb2117af9c149795c6c65c50",
   OKT: "0x8f8526dbfd6e38e3d8307702ca8469bae6c56c15",
+  OKB: "0xdf54b6c6195ea4d948d03bfd818d365cf175cfc2",
 };
 
 var mdxTokensInverse = new Map();
@@ -24,6 +25,8 @@ for (let val of Object.keys(mdxTokens)) {
 const tokenUSDT = {
   BTCK: ["0x2a20f39354702fadf7d2087edb8c0730bca87ca7", 18],
   KST: ["0x84Ee6A98990010FE87d2C79822763fCA584418E9", 18],
+  OKT: ["0xd346967e8874b9c4dcdd543a88ae47ee8c8bd21f", 18],
+  OKB: ["0x89824289Ae1D431aEf91bb39d666f6d0F635E1b9", 18],
 };
 
 function getmTokens() {
@@ -33,6 +36,10 @@ function getmTokens() {
 const mToken = {};
 for (let val of Object.values(mdxTokens)) {
   mToken[val] = new web3.eth.Contract(Bep20ABI, val);
+}
+
+async function getEthBalnce(account) {
+  return (await web3.eth.getBalance(account)) / 1e18;
 }
 
 let wallet_token_balance = {};
@@ -46,10 +53,6 @@ async function tokens_in_wallet() {
     //console.log('balance', val, b)
   }
   wallet_token_balance["OKT"] += await getEthBalnce(myAddress);
-
-  async function getEthBalnce(account) {
-    return (await web3.eth.getBalance(account)) / 1e18;
-  }
 }
 
 const mdexPairBSCAbi = require("./abis2/mdexpairbsc.json");
@@ -63,6 +66,8 @@ async function tokens_in_pool() {
   let lps = [
     //name , address, decimals, lowPrice, highPrice
     [0x0, "0x2a20F39354702FAdF7d2087EDb8C0730BCA87ca7", "BTCK", 18, "USDT", 18],
+    [0x3, "0xd346967e8874b9c4dcdd543a88ae47ee8c8bd21f", "WOKT", 18, "USDT", 18],
+    [0x5, "0x89824289ae1d431aef91bb39d666f6d0f635e1b9", "OKB", 18, "USDT", 18],
   ];
 
   for (let val of Object.keys(mdxTokens)) {
@@ -103,23 +108,43 @@ async function tokens_in_pool() {
     const rewardMdx = await hecoPoolContract.methods
       .pendingKst(pid, myAddress)
       .call();
-    console.log("lp kst reaward:", (rewardMdx / Math.pow(10, 18)).toFixed(2));
+
     //console.log(mdxTokensInverse, token0.toLowerCase())
     //console.log('key', mdxTokensInverse[token0.toLowerCase()])
     //console.log('lpAmount:', lpAmount, parseInt(reserves._reserve0), parseInt(lpAmount.amount), parseInt(totalSupply), decimals_0, decimals_1)
-    setAmount(
-      mdxTokensInverse.get(token0.toLowerCase()),
+    const amount0 =
       ((parseInt(reserves._reserve0) / Math.pow(10, decimals_0)) *
         parseInt(lpAmount.amount)) /
-        totalSupply
-    );
-    setAmount(
-      mdxTokensInverse.get(token1.toLowerCase()),
+      totalSupply;
+    const amount1 =
       ((parseInt(reserves._reserve1) / Math.pow(10, decimals_1)) *
         parseInt(lpAmount.amount)) /
-        totalSupply
-    );
+      totalSupply;
+    setAmount(mdxTokensInverse.get(token0.toLowerCase()), amount0);
+    setAmount(mdxTokensInverse.get(token1.toLowerCase()), amount1);
     setAmount("KST", rewardMdx / Math.pow(10, 18));
+
+    let u_value = 0;
+    if (mdxTokensInverse.get(token0.toLowerCase()) == "USDT") u_value = amount0;
+    else if (mdxTokensInverse.get(token1.toLowerCase()) == "USDT")
+      u_value = amount1;
+
+    const reward = rewardMdx / Math.pow(10, 18);
+    if (u_value != 0)
+      console.log(
+        "lp kst reaward:",
+        reward.toFixed(2),
+        (u_value * 2).toFixed(0),
+        (reward / u_value / 2).toFixed(6)
+      );
+    else
+      console.log(
+        "lp kst reaward:",
+        reward.toFixed(2),
+        (u_value * 2).toFixed(0),
+        "Not USDT pair"
+      );
+    //check each profit rate
   }
 }
 
@@ -181,6 +206,78 @@ async function tokens_in_singlePool() {
   }
 }
 
+const PERC20 = require("./abis2/PERC20.json");
+const tokens = {
+  vBTCK: "0x33a32f0ad4aa704e28c93ed8ffa61d50d51622a7",
+  vETHK: "0x75dcd2536a5f414b8f90bb7f2f3c015a26dc8c79",
+  vOKB: "0x8e1e582879cb8bac6283368e8ede458b63f499a5",
+  vUSDC: "0x849c37a029b38d3826562697ccc40c34477c6293",
+  vUSDT: "0xadf040519fe24ba9df6670599b2de7fd6049772f",
+  vOKT: "0x621ce6596e0b9ccf635316bfe7fdbc80c3029bec",
+};
+
+const pledgeRate = {
+  vBTCK: 0.8,
+  vETHK: 0.8,
+  vOKB: 0.5,
+  vUSDC: 0.9,
+  vUSDT: 0.9,
+  vOKT: 0.5,
+};
+
+const vToken = {};
+for (let val of Object.values(tokens)) {
+  vToken[val] = new web3.eth.Contract(PERC20, val);
+}
+
+const piggy_token_balance = {};
+
+async function tokens_in_wepiggy() {
+  for (let val of Object.keys(mdxTokens)) {
+    piggy_token_balance[val] = 0;
+  }
+
+  let borrowedValue = 0,
+    collatelValue = 0;
+  for (let key of Object.keys(tokens)) {
+    //key: vBTCK, ["BTCK", "ETHK", ...]
+    if (Object.keys(mdxTokens).indexOf(key.substr(1)) == -1) {
+      //console.log("continue", key)
+      continue;
+    }
+    const tokenContract = vToken[tokens[key]];
+    const balance = await tokenContract.methods.balanceOf(myAddress).call();
+    const borrowBalanceStored = await tokenContract.methods
+      .borrowBalanceStored(myAddress)
+      .call();
+    const exchangeRateStored = await tokenContract.methods
+      .exchangeRateStored()
+      .call();
+    const symbol = await tokenContract.methods.symbol().call();
+    const actualBalance = (balance * exchangeRateStored) / 1e36;
+    const actualBorrowed = borrowBalanceStored / 1e18;
+    if (Object.keys(token_price).length == 0) {
+      console.error("Should Put getTokensPrice before tokens_in_wepiggy");
+    } else {
+      collatelValue +=
+        actualBalance * token_price[key.substr(1)] * pledgeRate[key];
+      borrowedValue += actualBorrowed * token_price[key.substr(1)];
+    }
+
+    console.log(
+      symbol,
+      balance,
+      borrowBalanceStored,
+      exchangeRateStored,
+      actualBalance,
+      actualBorrowed
+    );
+    piggy_token_balance[key.substr(1)] = actualBalance - actualBorrowed;
+  }
+
+  return collatelValue == 0 ? 0 : (borrowedValue / collatelValue) * 100;
+}
+
 const token_price = {};
 async function getTokensPrice() {
   //input tokenBUSD
@@ -215,7 +312,7 @@ async function getTokensPrice() {
   }
 
   token_price["USDT"] = 1;
-  token_price["OKT"] = 0;
+  //token_price["OKT"] = 0;
 }
 
 function time_range(beginTime, endTime) {
@@ -244,6 +341,22 @@ function time_range(beginTime, endTime) {
   }
 }
 
+async function token_balance(token1, address) {
+  let c = new web3.eth.Contract(Bep20ABI, token1);
+  return (
+    (await c.methods.balanceOf(address).call()) /
+    Math.pow(10, await c.methods.decimals().call())
+  );
+}
+
+async function piggy_check_borrowable() {
+  const okt_balance = await getEthBalnce(tokens["vOKT"]);
+  const okb_balance = await token_balance(mdxTokens["OKB"], tokens["vOKB"]);
+  console.log(
+    `Piggy balance okt ${okt_balance.toFixed(0)} okb ${okb_balance.toFixed(0)}`
+  );
+}
+
 //await calculator();
 const myAddress = config.account.L7;
 let g_cnt = 0;
@@ -262,6 +375,20 @@ async function main() {
       //console.log("lp_token_balance:", lp_token_balance);
 
       await tokens_in_wallet();
+      const rate = await tokens_in_wepiggy();
+      console.log("rate: ", rate);
+      console.log("piggy_token_balance", piggy_token_balance);
+      if (rate > config.wepiggy_warning_rate.high) {
+        cmd.runSync("say " + "Pig借贷抵押率超过" + rate.toFixed(1));
+      } else if (rate < config.wepiggy_warning_rate.low) {
+        cmd.runSync("say " + "Pig借贷抵押率低于" + rate.toFixed(1));
+      } else if (g_cnt % 5 == 0) {
+        //10分钟，会提醒一次使用率
+        if (time_range("7:00", "22:00")) {
+          cmd.runSync("say " + "Pig使用率" + rate.toFixed(1));
+        }
+      }
+
       //console.log("wallet: ", wallet_token_balance);
       let profit = 0;
       for (let val of Object.keys(mdxTokens)) {
@@ -269,29 +396,35 @@ async function main() {
         //console.log(venus_token_balance[val])
         delta[val] =
           wallet_token_balance[val] +
+          piggy_token_balance[val] +
           lp_token_balance[val] -
           config.oec_initial_fund[val];
         //console.log(val, config.oec_initial_fund[val]);
-        //console.log(delta[val], token_price[val])
+        //console.log(delta[val], token_price[val]);
         profit += delta[val] * token_price[val];
       }
-      //console.log("delta:", delta);
+      console.log("delta:", delta);
       console.log(
         new Date(),
         `profit:${profit.toFixed(0)} USDT  ${delta.BTCK.toFixed(4)} BTCK ${(
           delta.BTCK * token_price.BTCK
         ).toFixed(0)} U_BTCB, ${(delta.KST * token_price.KST).toFixed(
           0
-        )} U_KST, ${(delta.USDT * token_price.USDT).toFixed(
+        )} U_KST, ${(delta.OKT * token_price.OKT).toFixed(0)} U_OKT, ${(
+          delta.OKB * token_price.OKB
+        ).toFixed(0)} U_OKB, ${(delta.USDT * token_price.USDT).toFixed(
           0
         )} U_USDT,  @${token_price.KST.toFixed(2)}`
       );
-      if (g_cnt++ % 10 == 0) {
+      if (g_cnt % 10 == 0) {
         //10分钟，会提醒一次使用率
         if (time_range("7:00", "22:00")) {
           cmd.runSync("say " + "ok" + profit.toFixed(0));
         }
       }
+      g_cnt++;
+
+      await piggy_check_borrowable();
       //caculator profit
     } catch (err) {
       console.log(err);
@@ -301,3 +434,4 @@ async function main() {
 }
 
 main();
+//tokens_in_wepiggy()
