@@ -65,9 +65,10 @@ async function tokens_in_pool() {
   // 0x35 wbnb busd 0x340192D37d95fB609874B1db6145ED26d1e47744
   let lps = [
     //name , address, decimals, lowPrice, highPrice
-    [0x0, "0x2a20F39354702FAdF7d2087EDb8C0730BCA87ca7", "BTCK", 18, "USDT", 18],
+    //[0x0, "0x2a20F39354702FAdF7d2087EDb8C0730BCA87ca7", "BTCK", 18, "USDT", 18],
     [0x3, "0xd346967e8874b9c4dcdd543a88ae47ee8c8bd21f", "WOKT", 18, "USDT", 18],
-    [0x5, "0x89824289ae1d431aef91bb39d666f6d0f635e1b9", "OKB", 18, "USDT", 18],
+    //[0x5, "0x89824289ae1d431aef91bb39d666f6d0f635e1b9", "OKB", 18, "USDT", 18],
+    [0x7, "0xa25da5a44a65ee9bd4ea61f946cbcf15512fd52e", "KSP", 18, "WOKT", 18],
   ];
 
   for (let val of Object.keys(mdxTokens)) {
@@ -128,6 +129,10 @@ async function tokens_in_pool() {
     if (mdxTokensInverse.get(token0.toLowerCase()) == "USDT") u_value = amount0;
     else if (mdxTokensInverse.get(token1.toLowerCase()) == "USDT")
       u_value = amount1;
+    else if (mdxTokensInverse.get(token0.toLowerCase()) == "OKT")
+      u_value = amount0 * token_price["OKT"];
+    else if (mdxTokensInverse.get(token1.toLowerCase()) == "OKT")
+      u_value = amount1 * token_price["OKT"];
 
     const reward = rewardMdx / Math.pow(10, 18);
     if (u_value != 0)
@@ -142,7 +147,7 @@ async function tokens_in_pool() {
         "lp kst reaward:",
         reward.toFixed(2),
         (u_value * 2).toFixed(0),
-        "Not USDT pair"
+        "0 Value"
       );
     //check each profit rate
   }
@@ -264,14 +269,14 @@ async function tokens_in_wepiggy() {
       borrowedValue += actualBorrowed * token_price[key.substr(1)];
     }
 
-    console.log(
-      symbol,
-      balance,
-      borrowBalanceStored,
-      exchangeRateStored,
-      actualBalance,
-      actualBorrowed
-    );
+    // console.log(
+    //   symbol,
+    //   balance,
+    //   borrowBalanceStored,
+    //   exchangeRateStored,
+    //   actualBalance,
+    //   actualBorrowed
+    // );
     piggy_token_balance[key.substr(1)] = actualBalance - actualBorrowed;
   }
 
@@ -377,7 +382,7 @@ async function main() {
       await tokens_in_wallet();
       const rate = await tokens_in_wepiggy();
       console.log("rate: ", rate);
-      console.log("piggy_token_balance", piggy_token_balance);
+      console.log("piggy_token_balance", JSON.stringify(piggy_token_balance));
       if (rate > config.wepiggy_warning_rate.high) {
         cmd.runSync("say " + "Pig借贷抵押率超过" + rate.toFixed(1));
       } else if (rate < config.wepiggy_warning_rate.low) {
@@ -403,7 +408,7 @@ async function main() {
         //console.log(delta[val], token_price[val]);
         profit += delta[val] * token_price[val];
       }
-      console.log("delta:", delta);
+      console.log("delta:", JSON.stringify(delta));
       console.log(
         new Date(),
         `profit:${profit.toFixed(0)} USDT  ${delta.BTCK.toFixed(4)} BTCK ${(
