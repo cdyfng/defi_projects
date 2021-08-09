@@ -222,8 +222,8 @@ const tokens = {
 };
 
 const pledgeRate = {
-  vBTCK: 0.8,
-  vETHK: 0.8,
+  vBTCK: 0.7,
+  vETHK: 0.7,
   vOKB: 0.5,
   vUSDC: 0.9,
   vUSDT: 0.9,
