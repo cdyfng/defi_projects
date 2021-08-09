@@ -385,140 +385,150 @@ async function lhb_routine() {
 let g_cnt = 0;
 async function main() {
   try {
-    const mdx_fil = await calculateCoins(
-      "0xfc021c1Ec170C7B320cfD4DE99E83a91e7eAabBc", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
-      account,
-      18,
-      18,
-      6 //MDX/FIL
-    );
+    // const mdx_fil = await calculateCoins(
+    //   "0xfc021c1Ec170C7B320cfD4DE99E83a91e7eAabBc", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
+    //   account,
+    //   18,
+    //   18,
+    //   6 //MDX/FIL
+    // );
 
-    const mdx_hbtc = await calculateCoins(
-      "0x2fb4be0f2785bd6009a383f3290cc97a4e3bd46b", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
-      account,
-      18,
-      18,
-      1 //MDX/HBTC
-    );
+    // // const mdx_hbtc = await calculateCoins(
+    // //   "0x2fb4be0f2785bd6009a383f3290cc97a4e3bd46b", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
+    // //   account,
+    // //   18,
+    // //   18,
+    // //   1 //MDX/HBTC
+    // // );
 
-    const mdx_husd = await calculateCoins(
-      "0x59FC9FF2efe186f07E2B9F6c83F78086613e95F2",
-      account,
-      8,
-      18,
-      3 //MDX/HUSD
-    );
+    // const mdx_husd = await calculateCoins(
+    //   "0x59FC9FF2efe186f07E2B9F6c83F78086613e95F2",
+    //   account,
+    //   8,
+    //   18,
+    //   3 //MDX/HUSD
+    // );
 
-    const mdx_hbtc_pool = await calculatePoolCoins(
-      "0x2fb4be0f2785bd6009a383f3290cc97a4e3bd46b", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
-      account,
-      18,
-      18,
-      32 //MDX/HBTC in Liquidity
-    );
+    // const mdx_hbtc_pool = await calculatePoolCoins(
+    //   "0x2fb4be0f2785bd6009a383f3290cc97a4e3bd46b", //"0x2Fb4bE0F2785bD6009A383f3290CC97A4e3bD46B",
+    //   account,
+    //   18,
+    //   18,
+    //   32 //MDX/HBTC in Liquidity
+    // );
 
-    const mdx_usdt_pool = await calculatePoolCoins(
-      "0x615E6285c5944540fd8bd921c9c8c56739Fd1E13",
-      account,
-      18,
-      18,
-      16 //MDX/USDT in Liquidity
-    );
+    // const mdx_usdt_pool = await calculatePoolCoins(
+    //   "0x615E6285c5944540fd8bd921c9c8c56739Fd1E13",
+    //   account,
+    //   18,
+    //   18,
+    //   16 //MDX/USDT in Liquidity
+    // );
 
-    const mdx_dot_pool = await calculatePoolCoins(
-      "0x640aeCF73Ca21f1bCAE74c7187CecF77F47c60Ac",
-      account,
-      18,
-      18,
-      0x29 //MDX/HDOT in Liquidity
-    );
+    // const mdx_dot_pool = await calculatePoolCoins(
+    //   "0x640aeCF73Ca21f1bCAE74c7187CecF77F47c60Ac",
+    //   account,
+    //   18,
+    //   18,
+    //   0x29 //MDX/HDOT in Liquidity
+    // );
     //MDX DOT
     //0x640aeCF73Ca21f1bCAE74c7187CecF77F47c60Ac
 
-    const usdt_hbch_pool = await calculatePoolCoins(
-      "0x1f0ec8e0096e145f2bf2cb4950ed7b52d1cbd35f",
+    // const usdt_hbch_pool = await calculatePoolCoins(
+    //   "0x1f0ec8e0096e145f2bf2cb4950ed7b52d1cbd35f",
+    //   account,
+    //   18,
+    //   18,
+    //   0x0c //BCH/USDT in Liquidity
+    // );
+    const wht_usdt_pool = await calculatePoolCoins(
+      "0x499B6E03749B4bAF95F9E70EeD5355b138EA6C31",
       account,
       18,
       18,
-      0x0c //BCH/USDT in Liquidity
+      0x11 //wht/USDT in Liquidity
     );
 
-    const wht_hdot_pool = await calculatePoolCoins(
-      "0xcd9a26b6af1445cd48f86bd583c70e46ea6e474b",
-      account,
-      18,
-      18,
-      0x30 //Hodt/Wht in Liquidity
-    );
+    // const wht_hdot_pool = await calculatePoolCoins(
+    //   "0xcd9a26b6af1445cd48f86bd583c70e46ea6e474b",
+    //   account,
+    //   18,
+    //   18,
+    //   0x30 //Hodt/Wht in Liquidity
+    // );
 
-    const hdot_usdt_pool = await calculatePoolCoins(
-      "0x5484ab0df3e51187f83f7f6b1a13f7a7ee98c368",
-      account,
-      18,
-      18,
-      0xd //Hodt/usdt in Liquidity
-    );
+    // const hdot_usdt_pool = await calculatePoolCoins(
+    //   "0x5484ab0df3e51187f83f7f6b1a13f7a7ee98c368",
+    //   account,
+    //   18,
+    //   18,
+    //   0xd //Hodt/usdt in Liquidity
+    // );
 
-    const mdx_usdt_airdrop_ht = await calculateHTAirDorpCoins(
-      "0x615E6285c5944540fd8bd921c9c8c56739Fd1E13",
-      account,
-      18,
-      18,
-      0x0 //MDX/USDT in HT airdrop boardroom
-    );
+    // const mdx_usdt_airdrop_ht = await calculateHTAirDorpCoins(
+    //   "0x615E6285c5944540fd8bd921c9c8c56739Fd1E13",
+    //   account,
+    //   18,
+    //   18,
+    //   0x0 //MDX/USDT in HT airdrop boardroom
+    // );
 
-    const mdx_wht_airdrop_ht = await calculateHTAirDorpCoins(
-      "0x6dd2993b50b365c707718b0807fc4e344c072ec2",
-      account,
-      18,
-      18,
-      0x2 //MDX/WHT in HT airdrop boardroom
-    );
+    // const mdx_wht_airdrop_ht = await calculateHTAirDorpCoins(
+    //   "0x6dd2993b50b365c707718b0807fc4e344c072ec2",
+    //   account,
+    //   18,
+    //   18,
+    //   0x2 //MDX/WHT in HT airdrop boardroom
+    // );
 
-    const mdx_airdrop_ht = await calculateHTAirDorpCoinsSingleMDX(
-      account
-      //1 : MDX -> WHT  airdrop boardroom
-    );
+    // const mdx_airdrop_ht = await calculateHTAirDorpCoinsSingleMDX(
+    //   account
+    //   //1 : MDX -> WHT  airdrop boardroom
+    // );
 
     const rewardMdx =
-      mdx_hbtc_pool.rewardMdx +
-      mdx_usdt_pool.rewardMdx +
-      mdx_hbtc.rewardMdx +
-      mdx_dot_pool.rewardMdx +
-      usdt_hbch_pool.rewardMdx +
-      wht_hdot_pool.rewardMdx +
-      hdot_usdt_pool.rewardMdx;
+      //mdx_hbtc_pool.rewardMdx +
+      //mdx_usdt_pool.rewardMdx +
+      //mdx_hbtc.rewardMdx +
+      //mdx_dot_pool.rewardMdx +
+      //usdt_hbch_pool.rewardMdx +
+      wht_usdt_pool.rewardMdx; //+
+    //wht_hdot_pool.rewardMdx;// +
+    //hdot_usdt_pool.rewardMdx;
 
     console.log("Total Pending MDX:", rewardMdx);
     const lp_mdx =
-      mdx_fil.token0 +
-      mdx_hbtc.token0 +
-      mdx_husd.token1 +
-      mdx_hbtc_pool.token0 +
-      mdx_usdt_pool.token0 +
-      mdx_dot_pool.token0 +
-      mdx_usdt_airdrop_ht.token0 +
-      mdx_wht_airdrop_ht.token0 +
-      mdx_airdrop_ht.mdx +
+      //mdx_fil.token0 +
+      //mdx_hbtc.token0 +
+      //mdx_husd.token1 +
+      //mdx_hbtc_pool.token0 +
+      //mdx_usdt_pool.token0 +
+      //mdx_dot_pool.token0 +
+      //mdx_usdt_airdrop_ht.token0 +
+      //mdx_wht_airdrop_ht.token0 +
+      //mdx_airdrop_ht.mdx +
       rewardMdx;
-    const lp_fil = mdx_fil.token1;
-    const lp_hbtc = mdx_hbtc.token1 + mdx_hbtc_pool.token1;
-    const lp_husd = mdx_husd.token0;
+    const lp_fil = 0; //mdx_fil.token1;
+    const lp_hbtc = 0; //mdx_hbtc.token1 + mdx_hbtc_pool.token1;
+    const lp_husd = 0; //mdx_husd.token0;
     const lp_usdt =
-      mdx_usdt_pool.token1 +
-      usdt_hbch_pool.token0 +
-      mdx_usdt_airdrop_ht.token1 +
-      hdot_usdt_pool.token1;
-    const lp_dot =
-      mdx_dot_pool.token1 + wht_hdot_pool.token1 + hdot_usdt_pool.token0;
-    const lp_bch = usdt_hbch_pool.token1;
+      //mdx_usdt_pool.token1 +
+      //usdt_hbch_pool.token0 +
+      wht_usdt_pool.token1; //+
+    //mdx_usdt_airdrop_ht.token1 +
+    //hdot_usdt_pool.token1;
+    const lp_dot = 0; //
+    //mdx_dot_pool.token1 + wht_hdot_pool.token1 ;//+ hdot_usdt_pool.token0;
+    const lp_bch = 0; //usdt_hbch_pool.token1;
     //console.log('lp:', lp_mdx, lp_fil, lp_hbtc, lp_bch);
     const lp_wht =
-      mdx_usdt_airdrop_ht.rewardWHT +
-      mdx_wht_airdrop_ht.token1 +
-      mdx_wht_airdrop_ht.rewardWHT +
-      mdx_airdrop_ht.rewardWHT +
-      wht_hdot_pool.token0;
+      //mdx_usdt_airdrop_ht.rewardWHT +
+      //mdx_wht_airdrop_ht.token1 +
+      //mdx_wht_airdrop_ht.rewardWHT +
+      //mdx_airdrop_ht.rewardWHT +
+      wht_usdt_pool.token0; //+
+    //wht_hdot_pool.token0;
 
     const s = await lhb_routine();
 
@@ -541,7 +551,11 @@ async function main() {
       s.HT.balanceOfUnderlying / 1e18 - s.HT.borrowBalanceStored / 1e18;
 
     //console.log(lhb_usdt, lhb_mdx, lhb_fil, lhb_hbtc);
-    //console.log(`Current LHB: ${lhb_usdt.toFixed(0)}U ${lhb_mdx.toFixed(0)}Mdx ${lhb_hbtc.toFixed(5)}BTC ${lhb_fil.toFixed(3)}FIL`);
+    console.log(
+      `Current LHB: ${s.MDX.balanceOfUnderlying / 1e18} Mdx ${
+        s.MDX.borrowBalanceStored / 1e18
+      }Mdx`
+    );
 
     const init_usdt = config.initial_fund.usdt;
     const init_hbtc = config.initial_fund.btc;
