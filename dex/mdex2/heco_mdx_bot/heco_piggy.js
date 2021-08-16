@@ -1,7 +1,7 @@
 const Web3 = require("web3");
 const Provider = Web3.providers.HttpProvider;
 const cmd = require("node-cmd");
-const config = require("./config.json");
+let config = require("./config.json");
 const web3 = new Web3(new Provider(config.node.hecoProvider));
 const Bep20ABI = require("./abis2/BEP20.json");
 
@@ -340,10 +340,13 @@ const myAddress = config.account.L6;
 let g_cnt = 0;
 
 async function main() {
+  console.log("heco piggy start");
   while (1) {
     try {
+      delete require.cache[require.resolve("./config.json")]; // Deleting loaded module
+      config = require("./config.json");
+
       let delta = {};
-      console.log("heco piggy start");
 
       //get price
       await getTokensPrice();
