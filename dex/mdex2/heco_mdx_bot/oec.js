@@ -1,7 +1,7 @@
 const Web3 = require("web3");
 const Provider = Web3.providers.HttpProvider;
 const cmd = require("node-cmd");
-const config = require("./config.json");
+let config = require("./config.json");
 const web3 = new Web3(new Provider(config.node.okProvider));
 const Bep20ABI = require("./abis2/BEP20.json");
 
@@ -369,6 +369,8 @@ let g_cnt = 0;
 async function main() {
   while (1) {
     try {
+      delete require.cache[require.resolve("./config.json")]; // Deleting loaded module
+      config = require("./config.json");
       let delta = {};
 
       //get price
