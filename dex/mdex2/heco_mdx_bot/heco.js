@@ -557,12 +557,12 @@ async function main() {
       }Mdx`
     );
 
-    const init_usdt = config.initial_fund.usdt;
-    const init_hbtc = config.initial_fund.btc;
-    const init_mdx = config.initial_fund.mdx;
-    const init_dot = config.initial_fund.dot;
-    const init_bch = config.initial_fund.bch;
-    const init_wht = config.initial_fund.wht;
+    const init_usdt = config.initial_fund.USDT;
+    const init_hbtc = config.initial_fund.HBTC;
+    const init_mdx = config.initial_fund.MDX;
+    const init_dot = config.initial_fund.DOT;
+    const init_bch = config.initial_fund.BCH;
+    const init_wht = config.initial_fund.WHT;
     //console.log("init_bch", init_bch)
     //console.log("b: husd, ", s.HUSD.account_balance)
     const delta_u =
