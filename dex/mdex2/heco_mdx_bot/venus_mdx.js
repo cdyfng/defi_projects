@@ -7,7 +7,7 @@ const Common = require("ethereumjs-common").default;
 const got = require("got");
 const cmd = require("node-cmd");
 
-const config = require("./config.json");
+let config = require("./config.json");
 const VenusABI = require("./networks/mainnet-abi.json");
 const VenusConfig = require("./networks/mainnet.json");
 
@@ -803,6 +803,9 @@ let g_cnt = 0;
 async function main() {
   while (1) {
     try {
+      delete require.cache[require.resolve('./config.json')]   // Deleting loaded module
+      config = require("./config.json");
+            
       let delta = {};
       //await calculator();
       //venus_token_balance = {};
