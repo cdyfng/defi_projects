@@ -453,31 +453,31 @@ async function tokens_in_pool() {
       "busd",
       18,
     ],
-    [
-      0x28,
-      "0x223740a259E461aBeE12D84A9FFF5Da69Ff071dD",
-      "mdex",
-      18,
-      "busd",
-      18,
-    ],
+    // [
+    //   0x28,
+    //   "0x223740a259E461aBeE12D84A9FFF5Da69Ff071dD",
+    //   "mdex",
+    //   18,
+    //   "busd",
+    //   18,
+    // ],
     //sxp/bnb
-    [0x48, "0x244CB20eFF76c3636C6B0d431aB748D47b326d0c", "sxp", 18, "bnb", 18],
+    //[0x48, "0x244CB20eFF76c3636C6B0d431aB748D47b326d0c", "sxp", 18, "bnb", 18],
     //sxp/busd
-    [0x3a, "0x091331f2231cc9b87cac33663371a8484a0a5197", "sxp", 18, "busd", 18],
+    //[0x3a, "0x091331f2231cc9b87cac33663371a8484a0a5197", "sxp", 18, "busd", 18],
     //dog/usdt
-    [0x4f, "0xf8e9b725e0de8a9546916861c2904b0eb8805b96", "usdt", 18, "doge", 8],
+    //[0x4f, "0xf8e9b725e0de8a9546916861c2904b0eb8805b96", "usdt", 18, "doge", 8],
     //xvs/busd
-    [0x3b, "0xfa4f77c240eb9c1ce45344ce4b6d4b4bacc7c09b", "xvs", 18, "busd", 18],
+    //[0x3b, "0xfa4f77c240eb9c1ce45344ce4b6d4b4bacc7c09b", "xvs", 18, "busd", 18],
     //wbnb/usdt
-    [
-      0x1f,
-      "0x09cb618bf5ef305fadfd2c8fc0c26eecf8c6d5fd",
-      "wbnb",
-      18,
-      "usdt",
-      18,
-    ],
+    // [
+    //   0x1f,
+    //   "0x09cb618bf5ef305fadfd2c8fc0c26eecf8c6d5fd",
+    //   "wbnb",
+    //   18,
+    //   "usdt",
+    //   18,
+    // ],
   ];
 
   for (let val of Object.keys(mdxTokens)) {
@@ -748,17 +748,17 @@ async function getVenusTokens() {
   totalBorrow += VAIBorrow;
   let borrowLimit = vTokens.reduce((a, b) => a + b.borrowLimit, 0);
   let borrowPercent = (totalBorrow / borrowLimit) * 100;
-  console.log(new Date(), "borrowPercent:", borrowPercent);
-  if (borrowPercent > config.venus_warning_rate.high) {
-    cmd.runSync("say " + "bnb借贷抵押率超过" + borrowPercent.toFixed(1));
-  } else if (borrowPercent < config.venus_warning_rate.low) {
-    cmd.runSync("say " + "bnb借贷抵押率低于" + borrowPercent.toFixed(1));
-  } else if (g_cnt++ % 5 == 0) {
-    //10分钟，会提醒一次使用率
-    if (time_range("7:00", "22:00")) {
-      cmd.runSync("say " + "BNB使用率" + borrowPercent.toFixed(1));
-    }
-  }
+  // console.log(new Date(), "borrowPercent:", borrowPercent);
+  // if (borrowPercent > config.venus_warning_rate.high) {
+  //   cmd.runSync("say " + "bnb借贷抵押率超过" + borrowPercent.toFixed(1));
+  // } else if (borrowPercent < config.venus_warning_rate.low) {
+  //   cmd.runSync("say " + "bnb借贷抵押率低于" + borrowPercent.toFixed(1));
+  // } else if (g_cnt++ % 5 == 0) {
+  //   //10分钟，会提醒一次使用率
+  //   if (time_range("7:00", "22:00")) {
+  //     cmd.runSync("say " + "BNB使用率" + borrowPercent.toFixed(1));
+  //   }
+  // }
   //let delta = {}
   //console.log("vTokens:", vTokens);
   for (let i in vTokens) {
@@ -768,6 +768,86 @@ async function getVenusTokens() {
       borrow: vTokens[i].borrow,
     };
   }
+}
+
+const PERC20 = require("./abis2/PERC20.json");
+const piggyTokens = {
+  vBUSD: "0x2dd8FFA7923a17739F70C34759Af7650e44EA3BE",
+  vUSDC: "0x2B7F68170a598E507B19Bca41ED745eABc936B3F",
+  vUSDT: "0x2a8Cd78bFb91ACF53f589961D213d87c956e0d7f",
+  vBNB: "0x33A32f0ad4AA704e28C93eD8Ffa61d50d51622a7",
+};
+
+const pledgeRate = {
+  vBUSD: 0.9,
+  vUSDC: 0.9,
+  vUSDT: 0.9,
+  vBNB: 0.8,
+};
+
+const pToken = {};
+for (let val of Object.values(piggyTokens)) {
+  pToken[val] = new web3.eth.Contract(PERC20, val);
+}
+
+const piggy_token_balance = {};
+
+async function tokens_in_wepiggy() {
+  for (let val of Object.keys(mdxTokens)) {
+    piggy_token_balance[val] = 0;
+  }
+
+  let borrowedValue = 0,
+    collatelValue = 0;
+  for (let key of Object.keys(piggyTokens)) {
+    //key: vBTCK, ["BTCK", "ETHK", ...]
+    if (Object.keys(mdxTokens).indexOf(key.substr(1)) == -1) {
+      console.log("continue", key);
+      continue;
+    }
+    const tokenContract = pToken[piggyTokens[key]];
+    const balance = await tokenContract.methods.balanceOf(myAddress).call();
+    const borrowBalanceStored = await tokenContract.methods
+      .borrowBalanceStored(myAddress)
+      .call();
+    const exchangeRateStored = await tokenContract.methods
+      .exchangeRateStored()
+      .call();
+    const symbol = await tokenContract.methods.symbol().call();
+    //console.log(key)
+    let p = key.substr(1) == "BUSD" ? 18 : tokenBUSD[key.substr(1)][1];
+    //console.log(key, p)
+    const actualBalance =
+      (balance * exchangeRateStored) / 1e18 / Math.pow(10, p);
+    const actualBorrowed = borrowBalanceStored / 1e18;
+    if (Object.keys(token_price).length == 0) {
+      console.error("Should Put getTokensPrice before tokens_in_wepiggy");
+    } else {
+      if (actualBalance == 0 && actualBorrowed == 0) continue;
+      else if (Object.keys(token_price).indexOf(key.substr(1)) == -1) {
+        console.error(key.substr(1), "No price");
+      }
+
+      collatelValue +=
+        actualBalance * token_price[key.substr(1)] * pledgeRate[key];
+      borrowedValue += actualBorrowed * token_price[key.substr(1)];
+      // console.log('c:',  token_price[key.substr(1)], pledgeRate[key],
+      //     actualBalance, actualBorrowed,
+      //     collatelValue, borrowedValue)
+    }
+
+    // console.log(
+    //   symbol,
+    //   balance,
+    //   borrowBalanceStored,
+    //   exchangeRateStored,
+    //   actualBalance,
+    //   actualBorrowed
+    // );
+    piggy_token_balance[key.substr(1)] = actualBalance - actualBorrowed;
+  }
+
+  return collatelValue == 0 ? 0 : (borrowedValue / collatelValue) * 100;
 }
 
 function time_range(beginTime, endTime) {
@@ -803,9 +883,9 @@ let g_cnt = 0;
 async function main() {
   while (1) {
     try {
-      delete require.cache[require.resolve('./config.json')]   // Deleting loaded module
+      delete require.cache[require.resolve("./config.json")]; // Deleting loaded module
       config = require("./config.json");
-            
+
       let delta = {};
       //await calculator();
       //venus_token_balance = {};
@@ -823,23 +903,38 @@ async function main() {
       await tokens_in_pool();
       //console.log('lp: ', lp_token_balance);
 
-      await tokens_in_board();
+      //await tokens_in_board();
       //console.log('board: ', board_token_balance);
 
-      await tokens_in_board2();
+      //await tokens_in_board2();
 
       //get account balance
       await tokens_in_wallet();
       //console.log('wallet: ', wallet_token_balance);
+      const rate = await tokens_in_wepiggy();
+      console.log("rate: ", rate);
+      console.log("piggy_token_balance", JSON.stringify(piggy_token_balance));
+      if (rate > config.wepiggy_warning_rate.high) {
+        cmd.runSync("say " + "BSC piggy借贷抵押率超过" + rate.toFixed(1));
+      } else if (rate < config.wepiggy_warning_rate.low) {
+        cmd.runSync("say " + "BSC piggy借贷抵押率低于" + rate.toFixed(1));
+      } else if (g_cnt % 5 == 0) {
+        //10分钟，会提醒一次使用率
+        if (time_range("7:00", "22:00")) {
+          cmd.runSync("say " + "BSC piggy使用率" + rate.toFixed(1));
+        }
+      }
+
       let profit = 0;
       for (let val of Object.keys(mdxTokens)) {
         //console.log(val)
         //console.log(venus_token_balance[val])
         delta[val] =
           wallet_token_balance[val] +
-          board_token_balance[val] +
-          board_token_balance2[val] +
+          //board_token_balance[val] +
+          //board_token_balance2[val] +
           lp_token_balance[val] +
+          piggy_token_balance[val] +
           venus_token_balance[val].supply -
           venus_token_balance[val].borrow -
           config.bsc_initial_fund[val];
